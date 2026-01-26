@@ -329,13 +329,16 @@ const App: React.FC = () => {
         type: 'url',
         value: currentImage,
       });
+      // Handle both array and single number for mean/std (native returns single number)
+      const meanStr = Array.isArray(stats.mean)
+        ? stats.mean.map((v) => v.toFixed(2)).join(', ')
+        : (stats.mean as number).toFixed(2);
+      const stdStr = Array.isArray(stats.std)
+        ? stats.std.map((v) => v.toFixed(2)).join(', ')
+        : (stats.std as number).toFixed(2);
       Alert.alert(
         'Image Statistics',
-        `Mean: [${stats.mean
-          .map((v) => v.toFixed(2))
-          .join(', ')}]\nStd: [${stats.std
-          .map((v) => v.toFixed(2))
-          .join(', ')}]\nMin: ${stats.min}\nMax: ${stats.max}`
+        `Mean: ${meanStr}\nStd: ${stdStr}\nMin: ${stats.min}\nMax: ${stats.max}`
       );
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
