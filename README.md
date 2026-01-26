@@ -182,8 +182,6 @@ const result = await getPixelData({
 | `dataLayout`    | `DataLayout`    | `'hwc'`               | Data layout format            |
 | `outputFormat`  | `OutputFormat`  | `'array'`             | Output format                 |
 
-> **Note**: The TypeScript types also include experimental options (`centerCrop`, `augmentation`, `edgeDetection`, `padding`, `preprocessing`, `filters`, `memoryLayout`, `quantization`, `acceleration`, `outputTarget`) that are defined for future use but not yet implemented in native code. These options are silently ignored. Use `applyAugmentations()` for image augmentation.
-
 ##### Result
 
 ```typescript

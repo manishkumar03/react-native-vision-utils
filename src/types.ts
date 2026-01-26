@@ -614,32 +614,12 @@ export interface GetPixelDataOptions {
   resize?: ResizeOptions;
   /** Region of interest to extract (optional) */
   roi?: Roi;
-  /** Center crop options (applied after resize) */
-  centerCrop?: CenterCropOptions;
   /** Data layout format (default: 'hwc') */
   dataLayout?: DataLayout;
-  /** Memory layout format (default: 'interleaved') */
-  memoryLayout?: MemoryLayout;
   /** Output format (default: 'array') */
   outputFormat?: OutputFormat;
-  /** Quantization options for int8/int16 output */
-  quantization?: QuantizationOptions;
-  /** Image augmentation options */
-  augmentation?: AugmentationOptions;
-  /** Edge detection options */
-  edgeDetection?: EdgeDetectionOptions;
-  /** Padding options */
-  padding?: PaddingOptions;
-  /** Preprocessing filter options */
-  preprocessing?: PreprocessingOptions;
-  /** Image filter options */
-  filters?: FilterOptions;
   /** Model preset (auto-configures resize, normalization, layout) */
   modelPreset?: ModelPreset;
-  /** Hardware acceleration option */
-  acceleration?: AccelerationType;
-  /** Target output format for platform ML frameworks */
-  outputTarget?: OutputTarget;
   /** Cache options */
   cache?: CacheOptions;
 }
@@ -1382,30 +1362,10 @@ export interface ConvertYUVResult {
  */
 export interface PreparedOptions
   extends Required<
-    Omit<
-      GetPixelDataOptions,
-      | 'roi'
-      | 'resize'
-      | 'centerCrop'
-      | 'augmentation'
-      | 'edgeDetection'
-      | 'padding'
-      | 'preprocessing'
-      | 'filters'
-      | 'quantization'
-      | 'cache'
-      | 'modelPreset'
-    >
+    Omit<GetPixelDataOptions, 'roi' | 'resize' | 'cache' | 'modelPreset'>
   > {
   roi?: Roi;
   resize?: Required<ResizeOptions>;
-  centerCrop?: CenterCropOptions;
-  augmentation?: AugmentationOptions;
-  edgeDetection?: EdgeDetectionOptions;
-  padding?: PaddingOptions;
-  preprocessing?: PreprocessingOptions;
-  filters?: FilterOptions;
-  quantization?: QuantizationOptions;
   cache?: CacheOptions;
   modelPreset?: ModelPreset;
 }

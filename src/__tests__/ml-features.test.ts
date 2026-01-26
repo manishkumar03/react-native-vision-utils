@@ -151,71 +151,6 @@ describe('Model Presets', () => {
   });
 });
 
-describe('Augmentation Options', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it('should pass augmentation options to native module', async () => {
-    const mockResult: PixelDataResult = {
-      data: [0.5],
-      width: 224,
-      height: 224,
-      channels: 3,
-      colorFormat: 'rgb',
-      dataLayout: 'hwc',
-      shape: [224, 224, 3],
-      processingTimeMs: 10,
-    };
-    mockGetPixelData.mockResolvedValue(mockResult);
-
-    await getPixelData({
-      source: { type: 'url', value: 'https://example.com/image.jpg' },
-      augmentation: {
-        horizontalFlip: true,
-        rotation: 15,
-        brightness: 0.2,
-        contrast: 1.1,
-      },
-    });
-
-    const calledOptions = mockGetPixelData.mock.calls[0][0];
-    expect(calledOptions.augmentation).toEqual({
-      horizontalFlip: true,
-      rotation: 15,
-      brightness: 0.2,
-      contrast: 1.1,
-    });
-  });
-
-  it('should validate rotation range', async () => {
-    await expect(
-      getPixelData({
-        source: { type: 'url', value: 'https://example.com/image.jpg' },
-        augmentation: { rotation: 400 },
-      })
-    ).rejects.toThrow('Rotation must be between 0 and 360 degrees');
-  });
-
-  it('should validate brightness range', async () => {
-    await expect(
-      getPixelData({
-        source: { type: 'url', value: 'https://example.com/image.jpg' },
-        augmentation: { brightness: 2 },
-      })
-    ).rejects.toThrow('Brightness must be between -1 and 1');
-  });
-
-  it('should validate noise options', async () => {
-    await expect(
-      getPixelData({
-        source: { type: 'url', value: 'https://example.com/image.jpg' },
-        augmentation: { noise: { type: 'gaussian', intensity: 2 } },
-      })
-    ).rejects.toThrow('Noise intensity must be between 0 and 1');
-  });
-});
-
 describe('Color Format Extensions', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -287,7 +222,6 @@ describe('Output Format Extensions', () => {
     const result = await getPixelData({
       source: { type: 'url', value: 'https://example.com/image.jpg' },
       outputFormat: 'int8Array',
-      quantization: { scale: 0.00784, zeroPoint: 0 },
     });
 
     expect(result.data).toBeInstanceOf(Int8Array);
@@ -312,90 +246,6 @@ describe('Output Format Extensions', () => {
     });
 
     expect(result.data).toBeInstanceOf(Int16Array);
-  });
-});
-
-describe('Edge Detection Options', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it('should pass edge detection options', async () => {
-    const mockResult: PixelDataResult = {
-      data: [0.5],
-      width: 224,
-      height: 224,
-      channels: 1,
-      colorFormat: 'grayscale',
-      dataLayout: 'hwc',
-      shape: [224, 224, 1],
-      processingTimeMs: 10,
-    };
-    mockGetPixelData.mockResolvedValue(mockResult);
-
-    await getPixelData({
-      source: { type: 'url', value: 'https://example.com/image.jpg' },
-      edgeDetection: { type: 'canny', lowThreshold: 50, highThreshold: 150 },
-    });
-
-    const calledOptions = mockGetPixelData.mock.calls[0][0];
-    expect(calledOptions.edgeDetection).toEqual({
-      type: 'canny',
-      lowThreshold: 50,
-      highThreshold: 150,
-    });
-  });
-
-  it('should validate edge detection type', async () => {
-    await expect(
-      getPixelData({
-        source: { type: 'url', value: 'https://example.com/image.jpg' },
-        edgeDetection: { type: 'invalid' as any },
-      })
-    ).rejects.toThrow('Invalid edge detection type');
-  });
-});
-
-describe('Filter Options', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it('should pass filter options', async () => {
-    const mockResult: PixelDataResult = {
-      data: [0.5],
-      width: 224,
-      height: 224,
-      channels: 3,
-      colorFormat: 'rgb',
-      dataLayout: 'hwc',
-      shape: [224, 224, 3],
-      processingTimeMs: 10,
-    };
-    mockGetPixelData.mockResolvedValue(mockResult);
-
-    await getPixelData({
-      source: { type: 'url', value: 'https://example.com/image.jpg' },
-      filters: {
-        sharpen: 0.5,
-        medianFilter: 3,
-      },
-    });
-
-    const calledOptions = mockGetPixelData.mock.calls[0][0];
-    expect(calledOptions.filters).toEqual({
-      sharpen: 0.5,
-      medianFilter: 3,
-    });
-  });
-
-  it('should validate median filter kernel size is odd', async () => {
-    await expect(
-      getPixelData({
-        source: { type: 'url', value: 'https://example.com/image.jpg' },
-        filters: { medianFilter: 4 },
-      })
-    ).rejects.toThrow('Median filter kernel size must be an odd number');
   });
 });
 

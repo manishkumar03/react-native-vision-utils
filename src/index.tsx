@@ -31,9 +31,6 @@ import {
   type TenCropOptions,
   type MultiCropResult,
   type ExtractPatchOptions,
-  type MemoryLayout,
-  type AccelerationType,
-  type OutputTarget,
   type ModelPreset,
   type AugmentationOptions,
   type QuantizeOptions,
@@ -116,15 +113,12 @@ export * from './types';
 
 const DEFAULT_COLOR_FORMAT: ColorFormat = 'rgb';
 const DEFAULT_DATA_LAYOUT: DataLayout = 'hwc';
-const DEFAULT_MEMORY_LAYOUT: MemoryLayout = 'interleaved';
 const DEFAULT_OUTPUT_FORMAT: OutputFormat = 'array';
 const DEFAULT_NORMALIZATION: Normalization = { preset: 'scale' };
 const DEFAULT_RESIZE_STRATEGY = 'cover' as const;
 const DEFAULT_PAD_COLOR: [number, number, number, number] = [0, 0, 0, 255];
 const DEFAULT_LETTERBOX_COLOR: [number, number, number] = [114, 114, 114];
 const DEFAULT_BATCH_CONCURRENCY = 4;
-const DEFAULT_ACCELERATION: AccelerationType = 'auto';
-const DEFAULT_OUTPUT_TARGET: OutputTarget = 'default';
 
 // =============================================================================
 // Model Preset Configurations
@@ -376,18 +370,6 @@ function validateOptions(options: GetPixelDataOptions): void {
     }
   }
 
-  if (options.memoryLayout) {
-    const validMemoryLayouts = ['interleaved', 'planar'];
-    if (!validMemoryLayouts.includes(options.memoryLayout)) {
-      throw new VisionUtilsException(
-        'INVALID_SOURCE',
-        `Invalid memory layout: ${
-          options.memoryLayout
-        }. Must be one of: ${validMemoryLayouts.join(', ')}`
-      );
-    }
-  }
-
   if (options.outputFormat) {
     const validOutputFormats = [
       'array',
@@ -402,31 +384,6 @@ function validateOptions(options: GetPixelDataOptions): void {
         `Invalid output format: ${
           options.outputFormat
         }. Must be one of: ${validOutputFormats.join(', ')}`
-      );
-    }
-  }
-
-  if (options.augmentation) {
-    validateAugmentation(options.augmentation);
-  }
-
-  if (options.edgeDetection) {
-    const validEdgeTypes = ['sobel', 'canny', 'laplacian'];
-    if (!validEdgeTypes.includes(options.edgeDetection.type)) {
-      throw new VisionUtilsException(
-        'INVALID_SOURCE',
-        `Invalid edge detection type: ${
-          options.edgeDetection.type
-        }. Must be one of: ${validEdgeTypes.join(', ')}`
-      );
-    }
-  }
-
-  if (options.filters?.medianFilter !== undefined) {
-    if (options.filters.medianFilter % 2 === 0) {
-      throw new VisionUtilsException(
-        'INVALID_SOURCE',
-        'Median filter kernel size must be an odd number'
       );
     }
   }
@@ -562,10 +519,7 @@ function prepareOptions(options: GetPixelDataOptions): PreparedOptions {
     colorFormat: presetApplied.colorFormat || DEFAULT_COLOR_FORMAT,
     normalization: presetApplied.normalization || DEFAULT_NORMALIZATION,
     dataLayout: presetApplied.dataLayout || DEFAULT_DATA_LAYOUT,
-    memoryLayout: presetApplied.memoryLayout || DEFAULT_MEMORY_LAYOUT,
     outputFormat: presetApplied.outputFormat || DEFAULT_OUTPUT_FORMAT,
-    acceleration: presetApplied.acceleration || DEFAULT_ACCELERATION,
-    outputTarget: presetApplied.outputTarget || DEFAULT_OUTPUT_TARGET,
     modelPreset: presetApplied.modelPreset,
   };
 
@@ -583,34 +537,6 @@ function prepareOptions(options: GetPixelDataOptions): PreparedOptions {
 
   if (presetApplied.roi) {
     prepared.roi = presetApplied.roi;
-  }
-
-  if (presetApplied.centerCrop) {
-    prepared.centerCrop = presetApplied.centerCrop;
-  }
-
-  if (presetApplied.augmentation) {
-    prepared.augmentation = presetApplied.augmentation;
-  }
-
-  if (presetApplied.edgeDetection) {
-    prepared.edgeDetection = presetApplied.edgeDetection;
-  }
-
-  if (presetApplied.padding) {
-    prepared.padding = presetApplied.padding;
-  }
-
-  if (presetApplied.preprocessing) {
-    prepared.preprocessing = presetApplied.preprocessing;
-  }
-
-  if (presetApplied.filters) {
-    prepared.filters = presetApplied.filters;
-  }
-
-  if (presetApplied.quantization) {
-    prepared.quantization = presetApplied.quantization;
   }
 
   if (presetApplied.cache) {
@@ -764,11 +690,7 @@ export async function getPixelData(
     )) as Record<string, unknown>;
 
     // Convert output format
-    return convertOutputFormat(
-      result,
-      preparedOptions.outputFormat,
-      preparedOptions.quantization
-    );
+    return convertOutputFormat(result, preparedOptions.outputFormat);
   } catch (error) {
     throw VisionUtilsException.fromNativeError(error);
   }
@@ -839,8 +761,7 @@ export async function batchGetPixelData(
 
         const outputFormat =
           preparedOptionsArray[index]?.outputFormat || DEFAULT_OUTPUT_FORMAT;
-        const quantization = preparedOptionsArray[index]?.quantization;
-        return convertOutputFormat(itemResult, outputFormat, quantization);
+        return convertOutputFormat(itemResult, outputFormat);
       }
     );
 
