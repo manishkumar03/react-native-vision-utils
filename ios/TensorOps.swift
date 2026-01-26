@@ -125,9 +125,17 @@ class TensorOps {
             throw VisionUtilsError.processingError("Cannot concatenate empty results array")
         }
 
-        // Get dimensions from first result
-        guard let firstData = results[0]["data"] as? [Float] ?? results[0]["data"] as? [NSNumber],
-              let firstWidth = results[0]["width"] as? Int,
+        // Get dimensions from first result - handle both [Float] and [NSNumber] types
+        let firstData: [Float]
+        if let floatData = results[0]["data"] as? [Float] {
+            firstData = floatData
+        } else if let nsNumberData = results[0]["data"] as? [NSNumber] {
+            firstData = nsNumberData.map { $0.floatValue }
+        } else {
+            throw VisionUtilsError.processingError("Invalid result format")
+        }
+
+        guard let firstWidth = results[0]["width"] as? Int,
               let firstHeight = results[0]["height"] as? Int,
               let firstChannels = results[0]["channels"] as? Int else {
             throw VisionUtilsError.processingError("Invalid result format")
@@ -138,8 +146,16 @@ class TensorOps {
         var batchData = [Float](repeating: 0, count: batchSize * singleImageSize)
 
         for (idx, result) in results.enumerated() {
-            guard let data = result["data"] as? [Float] ?? (result["data"] as? [NSNumber])?.map({ $0.floatValue }),
-                  let width = result["width"] as? Int,
+            let data: [Float]
+            if let floatData = result["data"] as? [Float] {
+                data = floatData
+            } else if let nsNumberData = result["data"] as? [NSNumber] {
+                data = nsNumberData.map { $0.floatValue }
+            } else {
+                throw VisionUtilsError.processingError("Invalid result format at index \(idx)")
+            }
+
+            guard let width = result["width"] as? Int,
                   let height = result["height"] as? Int,
                   let channels = result["channels"] as? Int else {
                 throw VisionUtilsError.processingError("Invalid result format at index \(idx)")
