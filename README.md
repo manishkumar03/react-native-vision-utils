@@ -1,8 +1,56 @@
-# react-native-vision-utils
+<p align="center">
+  <h1 align="center">react-native-vision-utils</h1>
+</p>
 
-A high-performance React Native library for image preprocessing optimized for ML/AI inference pipelines. Provides comprehensive tools for pixel data extraction, tensor manipulation, image augmentation, and model-specific preprocessing.
+<p align="center">
+  <strong>High-performance React Native library for image preprocessing optimized for ML/AI inference pipelines</strong>
+</p>
 
-## Features
+<p align="center">
+  <a href="#installation">Installation</a> •
+  <a href="#quick-start">Quick Start</a> •
+  <a href="#api-reference">API Reference</a> •
+  <a href="#features">Features</a> •
+  <a href="#contributing">Contributing</a>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/npm/v/react-native-vision-utils?style=flat-square" alt="npm version" />
+  <img src="https://img.shields.io/npm/dm/react-native-vision-utils?style=flat-square" alt="downloads" />
+  <img src="https://img.shields.io/github/license/user/react-native-vision-utils?style=flat-square" alt="license" />
+</p>
+
+---
+
+Provides comprehensive tools for pixel data extraction, tensor manipulation, image augmentation, and model-specific preprocessing with native implementations in Swift (iOS) and Kotlin (Android).
+
+## 📋 Table of Contents
+
+- [Features](#-features)
+- [Installation](#-installation)
+- [Quick Start](#-quick-start)
+- [API Reference](#-api-reference)
+  - [Core Functions](#core-functions)
+  - [Image Analysis](#image-analysis)
+  - [Video Processing](#video-processing)
+  - [Image Augmentation](#image-augmentation)
+  - [Multi-Crop Operations](#multi-crop-operations)
+  - [Tensor Operations](#tensor-operations)
+  - [Quantization](#quantization)
+  - [Label Database](#label-database)
+  - [Camera Integration](#camera-integration)
+  - [Bounding Box Utilities](#bounding-box-utilities)
+  - [Letterbox Utilities](#letterbox-utilities)
+  - [Drawing & Visualization](#drawing--visualization)
+- [Types Reference](#-types-reference)
+- [Error Handling](#-error-handling)
+- [Performance Tips](#-performance-tips)
+- [Contributing](#-contributing)
+- [License](#-license)
+
+---
+
+## ✨ Features
 
 - 🚀 **High Performance**: Native implementations in Swift (iOS) and Kotlin (Android)
 - 🔢 **Raw Pixel Data**: Extract pixel values as typed arrays (Float32, Int32, Uint8) ready for ML inference
@@ -31,7 +79,9 @@ A high-performance React Native library for image preprocessing optimized for ML
 - ✅ **Tensor Validation**: Validate tensor shapes, dtypes, and value ranges before inference
 - 📦 **Batch Assembly**: Combine multiple images into NCHW/NHWC batch tensors
 
-## Installation
+---
+
+## 📦 Installation
 
 ```sh
 npm install react-native-vision-utils
@@ -43,7 +93,9 @@ For iOS, run:
 cd ios && pod install
 ```
 
-## Quick Start
+---
+
+## 🚀 Quick Start
 
 ### Basic Usage
 
@@ -97,9 +149,11 @@ const mobileNetResult = await getPixelData({
 | `dino`            | 224×224   | cover     | ImageNet      | NCHW   |
 | `detr`            | 800×800   | contain   | ImageNet      | NCHW   |
 
-## API Reference
+---
 
-### Core Functions
+## 📖 API Reference
+
+### 🔧 Core Functions
 
 #### `getPixelData(options)`
 
@@ -178,7 +232,9 @@ results.results.forEach((result, index) => {
 });
 ```
 
-### Image Analysis
+---
+
+### 🔍 Image Analysis
 
 #### `getImageStatistics(source)`
 
@@ -396,7 +452,9 @@ result.frames.forEach((frame) => {
 | `channels` | number | Number of channels (only present when outputFormat='pixelData') |
 | `error` | string | Error message if frame extraction failed (frame may still be present with partial data) |
 
-### Image Augmentation
+---
+
+### 🎨 Image Augmentation
 
 #### `applyAugmentations(source, augmentations)`
 
@@ -554,7 +612,9 @@ const probabilistic = await cutout(
 | `seed` | number | Seed used for random generation |
 | `processingTimeMs` | number | Processing time in milliseconds |
 
-### Multi-Crop Operations
+---
+
+### ✂️ Multi-Crop Operations
 
 #### `fiveCrop(source, options, pixelOptions)`
 
@@ -763,7 +823,9 @@ console.log(batch.data);      // Combined Float32Array
 | `layout` | 'nchw' \| 'nhwc' | 'nchw' | Output batch layout |
 | `padToSize` | number | - | Pad batch to this size with zeros (optional) |
 
-### Tensor Operations
+---
+
+### 🧮 Tensor Operations
 
 #### `extractChannel(data, width, height, channels, channelIndex, dataLayout)`
 
@@ -860,7 +922,9 @@ const permuted = await permute(
 console.log(permuted.shape); // [channels, height, width]
 ```
 
-### Tensor to Image
+---
+
+### 🖼️ Tensor to Image
 
 #### `tensorToImage(data, width, height, options)`
 
@@ -892,7 +956,9 @@ const image = await tensorToImage(result.data, result.width, result.height, {
 console.log(image.base64); // Base64 encoded PNG
 ```
 
-### Cache Management
+---
+
+### 💾 Cache Management
 
 #### `clearCache()`
 
@@ -918,7 +984,9 @@ console.log(stats.size);
 console.log(stats.maxSize);
 ```
 
-### Label Database
+---
+
+### 🏷️ Label Database
 
 Built-in label databases for common ML classification and detection models. No external files needed.
 
@@ -1018,7 +1086,9 @@ const datasets = await getAvailableDatasets();
 | `places365`   | 365     | Places365 scene recognition          |
 | `ade20k`      | 150     | ADE20K semantic segmentation         |
 
-### Camera Frame Utilities
+---
+
+### 📹 Camera Frame Utilities
 
 High-performance utilities for processing camera frames directly, optimized for integration with react-native-vision-camera.
 
@@ -1097,7 +1167,9 @@ console.log(rgbData.channels); // 3
 | `left`      | 90° counter-clockwise |
 | `right`     | 90° clockwise         |
 
-### Quantization (for TFLite and Other Quantized Models)
+---
+
+### 📊 Quantization (for TFLite and Other Quantized Models)
 
 Native high-performance quantization for deploying to quantized ML models like TFLite int8.
 
@@ -1215,7 +1287,9 @@ Quantize:   q = round(value / scale + zeroPoint)
 Dequantize: value = (q - zeroPoint) * scale
 ```
 
-### Bounding Box Utilities
+---
+
+### 📦 Bounding Box Utilities
 
 High-performance utilities for working with object detection outputs.
 
@@ -1315,7 +1389,9 @@ const result = await nonMaxSuppression(detections, {
 // Keeps first and third detection; second is suppressed due to overlap
 ```
 
-### Letterbox Padding
+---
+
+### 📐 Letterbox Padding
 
 YOLO-style letterbox preprocessing for preserving aspect ratio.
 
@@ -1377,7 +1453,9 @@ const result = await reverseLetterbox(
 // Boxes are now in original 1920x1080 coordinates
 ```
 
-### Drawing & Visualization
+---
+
+### 🎨 Drawing & Visualization
 
 Utilities for visualizing detection and segmentation results.
 
@@ -1494,7 +1572,9 @@ const result = await overlayHeatmap(
 | `hot`     | Black → Red → Yellow → White                 |
 | `viridis` | Purple → Blue → Green → Yellow               |
 
-## Type Reference
+---
+
+## 📝 Type Reference
 
 ### Image Source Types
 
@@ -1587,7 +1667,9 @@ getChannelCount('grayscale'); // 1
 isVisionUtilsError(error); // boolean
 ```
 
-## Error Handling
+---
+
+## ⚠️ Error Handling
 
 All functions throw `VisionUtilsError` on failure:
 
@@ -1612,37 +1694,57 @@ try {
 
 ### Error Codes
 
-| Code                 | Description                |
-| -------------------- | -------------------------- |
-| `INVALID_SOURCE`     | Invalid image source       |
-| `LOAD_FAILED`        | Failed to load image       |
-| `INVALID_ROI`        | Invalid region of interest |
-| `PROCESSING_FAILED`  | Processing error           |
-| `INVALID_OPTIONS`    | Invalid options provided   |
-| `INVALID_CHANNEL`    | Invalid channel index      |
-| `INVALID_PATCH`      | Invalid patch dimensions   |
-| `DIMENSION_MISMATCH` | Tensor dimension mismatch  |
-| `EMPTY_BATCH`        | Empty batch provided       |
-| `UNKNOWN`            | Unknown error              |
+| Code | Description |
+|:-----|:------------|
+| `INVALID_SOURCE` | Invalid image source |
+| `LOAD_FAILED` | Failed to load image |
+| `INVALID_ROI` | Invalid region of interest |
+| `PROCESSING_FAILED` | Processing error |
+| `INVALID_OPTIONS` | Invalid options provided |
+| `INVALID_CHANNEL` | Invalid channel index |
+| `INVALID_PATCH` | Invalid patch dimensions |
+| `DIMENSION_MISMATCH` | Tensor dimension mismatch |
+| `EMPTY_BATCH` | Empty batch provided |
+| `UNKNOWN` | Unknown error |
 
-## Performance Tips
+---
 
-1. **Use appropriate resize strategies**: `letterbox` for YOLO, `cover` for classification models
-2. **Batch processing**: Use `batchGetPixelData` with appropriate concurrency for multiple images
-3. **Cache management**: Call `clearCache()` when memory is constrained
-4. **Use model presets**: Pre-configured settings are optimized for each model
-5. **Avoid unnecessary conversions**: Choose the right `dataLayout` upfront
+## ⚡ Performance Tips
 
-## Contributing
+> 💡 **Pro Tips for optimal performance**
 
-- [Development workflow](CONTRIBUTING.md#development-workflow)
-- [Sending a pull request](CONTRIBUTING.md#sending-a-pull-request)
-- [Code of conduct](CODE_OF_CONDUCT.md)
+| Tip | Description |
+|:----|:------------|
+| 🎯 **Resize Strategies** | Use `letterbox` for YOLO, `cover` for classification models |
+| 📦 **Batch Processing** | Use `batchGetPixelData` with appropriate concurrency for multiple images |
+| 💾 **Cache Management** | Call `clearCache()` when memory is constrained |
+| ⚙️ **Model Presets** | Pre-configured settings are optimized for each model |
+| 🔄 **Data Layout** | Choose the right `dataLayout` upfront to avoid unnecessary conversions |
 
-## License
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our guides:
+
+| Resource | Description |
+|:---------|:------------|
+| 📋 [Development workflow](CONTRIBUTING.md#development-workflow) | How to set up your dev environment |
+| 🔀 [Sending a pull request](CONTRIBUTING.md#sending-a-pull-request) | Guidelines for submitting PRs |
+| 📜 [Code of conduct](CODE_OF_CONDUCT.md) | Community guidelines |
+
+---
+
+## 📄 License
 
 MIT
 
 ---
 
-Made with [create-react-native-library](https://github.com/callstack/react-native-builder-bob)
+<p align="center">
+  Made with ❤️ using <a href="https://github.com/callstack/react-native-builder-bob">create-react-native-library</a>
+</p>
+
+<p align="center">
+  <a href="#react-native-vision-utils">⬆️ Back to Top</a>
+</p>
