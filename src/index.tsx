@@ -43,6 +43,15 @@ import {
   type QuantizationParams,
   type QuantizationDtype,
   type QuantizationMode,
+  type LabelDataset,
+  type LabelInfo,
+  type GetTopLabelsOptions,
+  type TopLabelResult,
+  type DatasetInfo,
+  type CameraFrameSource,
+  type CameraFrameOptions,
+  type CameraFrameResult,
+  type CameraPixelFormat,
 } from './types';
 
 // Re-export all types
@@ -1531,6 +1540,310 @@ export async function getCacheStats(): Promise<{
       maxSize: number;
     };
     return result;
+  } catch (error) {
+    throw VisionUtilsException.fromNativeError(error);
+  }
+}
+
+// =============================================================================
+// Label Database Functions
+// =============================================================================
+
+/**
+ * Get a label by index from a dataset
+ *
+ * Returns the human-readable label for a given class index.
+ * Supports COCO (80/91 classes), ImageNet (1000 classes), VOC, CIFAR, and more.
+ *
+ * @param index - The class index from model output
+ * @param dataset - The dataset to use (default: 'coco')
+ * @param includeMetadata - Whether to return full LabelInfo with supercategory
+ * @returns Promise resolving to label string or LabelInfo object
+ *
+ * @example
+ * // Simple usage - get label string
+ * const label = await getLabel(0, 'coco'); // "person"
+ *
+ * // With metadata
+ * const info = await getLabel(16, 'coco', true);
+ * // { index: 16, name: "dog", supercategory: "animal" }
+ *
+ * // ImageNet classification
+ * const breed = await getLabel(208, 'imagenet'); // "Labrador retriever"
+ */
+export async function getLabel(
+  index: number,
+  dataset: LabelDataset = 'coco',
+  includeMetadata: boolean = false
+): Promise<string | LabelInfo> {
+  if (typeof index !== 'number' || index < 0 || !Number.isInteger(index)) {
+    throw new VisionUtilsException(
+      'Label index must be a non-negative integer',
+      'INVALID_LABEL_INDEX'
+    );
+  }
+
+  try {
+    const result = await VisionUtils.getLabel(index, dataset, includeMetadata);
+    return result as string | LabelInfo;
+  } catch (error) {
+    throw VisionUtilsException.fromNativeError(error);
+  }
+}
+
+/**
+ * Get top-K labels from classification scores
+ *
+ * Takes model output scores and returns the top K predictions with labels
+ * and confidence scores. Useful for classification model results.
+ *
+ * @param scores - Array of confidence scores from model output
+ * @param options - Options including dataset, k value, and minimum confidence
+ * @returns Promise resolving to array of TopLabelResult
+ *
+ * @example
+ * // Get top 5 predictions from MobileNet output
+ * const modelOutput = [...]; // 1000 float scores from model
+ * const top5 = await getTopLabels(modelOutput, {
+ *   dataset: 'imagenet',
+ *   k: 5,
+ *   minConfidence: 0.01
+ * });
+ * // [
+ * //   { index: 208, label: "Labrador retriever", confidence: 0.85 },
+ * //   { index: 209, label: "Golden retriever", confidence: 0.08 },
+ * //   ...
+ * // ]
+ */
+export async function getTopLabels(
+  scores: number[],
+  options: GetTopLabelsOptions = {}
+): Promise<TopLabelResult[]> {
+  if (!Array.isArray(scores) || scores.length === 0) {
+    throw new VisionUtilsException(
+      'Scores must be a non-empty array',
+      'INVALID_SCORES'
+    );
+  }
+
+  const opts = {
+    dataset: options.dataset,
+    k: options.k ?? 5,
+    minConfidence: options.minConfidence ?? 0,
+    includeMetadata: options.includeMetadata ?? false,
+  };
+
+  try {
+    const result = await VisionUtils.getTopLabels(scores, opts);
+    return result as TopLabelResult[];
+  } catch (error) {
+    throw VisionUtilsException.fromNativeError(error);
+  }
+}
+
+/**
+ * Get all labels for a dataset
+ *
+ * Returns the complete list of labels for a given dataset.
+ * Useful for building UI dropdowns or mapping all indices.
+ *
+ * @param dataset - The dataset name
+ * @returns Promise resolving to array of all label strings
+ *
+ * @example
+ * const cocoLabels = await getAllLabels('coco');
+ * // ["person", "bicycle", "car", ..., "toothbrush"] (80 items)
+ *
+ * const imagenetLabels = await getAllLabels('imagenet');
+ * // ["tench", "goldfish", ..., "toilet tissue"] (1000 items)
+ */
+export async function getAllLabels(dataset: LabelDataset): Promise<string[]> {
+  try {
+    const result = await VisionUtils.getAllLabels(dataset);
+    return result;
+  } catch (error) {
+    throw VisionUtilsException.fromNativeError(error);
+  }
+}
+
+/**
+ * Get information about a dataset
+ *
+ * Returns metadata about a dataset including number of classes,
+ * description, and availability status.
+ *
+ * @param dataset - The dataset name
+ * @returns Promise resolving to DatasetInfo
+ *
+ * @example
+ * const info = await getDatasetInfo('imagenet');
+ * // {
+ * //   name: "imagenet",
+ * //   numClasses: 1000,
+ * //   description: "ImageNet ILSVRC 2012 classification labels",
+ * //   isAvailable: true
+ * // }
+ */
+export async function getDatasetInfo(
+  dataset: LabelDataset
+): Promise<DatasetInfo> {
+  try {
+    const result = await VisionUtils.getDatasetInfo(dataset);
+    return result as DatasetInfo;
+  } catch (error) {
+    throw VisionUtilsException.fromNativeError(error);
+  }
+}
+
+/**
+ * Get list of all available datasets
+ *
+ * Returns the names of all built-in label datasets that can be used
+ * with getLabel() and getTopLabels().
+ *
+ * @returns Promise resolving to array of dataset names
+ *
+ * @example
+ * const datasets = await getAvailableDatasets();
+ * // ["coco", "coco91", "imagenet", "voc", "cifar10", "cifar100"]
+ */
+export async function getAvailableDatasets(): Promise<LabelDataset[]> {
+  try {
+    const result = await VisionUtils.getAvailableDatasets();
+    return result as LabelDataset[];
+  } catch (error) {
+    throw VisionUtilsException.fromNativeError(error);
+  }
+}
+
+// =============================================================================
+// Camera Frame Functions
+// =============================================================================
+
+/**
+ * Process a camera frame directly to tensor data
+ *
+ * Converts raw camera frame buffers (YUV, NV12, etc.) directly to normalized
+ * tensor data without intermediate JPEG encoding. This is significantly faster
+ * than saving frames to disk or converting to base64.
+ *
+ * Works with react-native-vision-camera frame processors and similar libraries.
+ *
+ * @param frameSource - Camera frame source with buffer pointer and metadata
+ * @param options - Processing options (resize, normalization, etc.)
+ * @returns Promise resolving to processed tensor data
+ *
+ * @example
+ * // In a vision-camera frame processor
+ * const frameProcessor = useFrameProcessor((frame) => {
+ *   'worklet';
+ *   const result = processCameraFrame({
+ *     bufferType: 'pointer',
+ *     buffer: frame.getNativeBuffer().toString(),
+ *     width: frame.width,
+ *     height: frame.height,
+ *     pixelFormat: 'yuv420',
+ *     bytesPerRow: frame.bytesPerRow,
+ *     orientation: 'portrait'
+ *   }, {
+ *     targetSize: { width: 224, height: 224 },
+ *     normalization: { preset: 'imagenet' },
+ *     outputFormat: 'rgb'
+ *   });
+ *   // result.data is ready for inference
+ * }, []);
+ */
+export async function processCameraFrame(
+  frameSource: CameraFrameSource,
+  options: CameraFrameOptions = {}
+): Promise<CameraFrameResult> {
+  // Validate frame source
+  if (!frameSource.dataBase64) {
+    throw new VisionUtilsException(
+      'Frame dataBase64 is required',
+      'MISSING_FRAME_DATA'
+    );
+  }
+
+  if (!frameSource.width || !frameSource.height) {
+    throw new VisionUtilsException(
+      'Frame width and height are required',
+      'MISSING_FRAME_DIMENSIONS'
+    );
+  }
+
+  if (!frameSource.pixelFormat) {
+    throw new VisionUtilsException(
+      'Frame pixel format is required',
+      'MISSING_PIXEL_FORMAT'
+    );
+  }
+
+  const opts = {
+    outputWidth: options.outputWidth,
+    outputHeight: options.outputHeight,
+    outputFormat: options.outputFormat ?? 'rgb',
+    normalize: options.normalize ?? true,
+    mean: options.mean,
+    std: options.std,
+  };
+
+  try {
+    const result = await VisionUtils.processCameraFrame(frameSource, opts);
+    return result as CameraFrameResult;
+  } catch (error) {
+    throw VisionUtilsException.fromNativeError(error);
+  }
+}
+
+/**
+ * Convert YUV camera frame to RGB
+ *
+ * Low-level function to convert YUV/NV12/NV21 buffers to RGB.
+ * Use processCameraFrame() for a higher-level API with resize and normalization.
+ *
+ * @param yBuffer - Y plane buffer pointer or base64 data
+ * @param uBuffer - U plane buffer pointer or base64 data
+ * @param vBuffer - V plane buffer pointer or base64 data
+ * @param width - Frame width
+ * @param height - Frame height
+ * @param pixelFormat - YUV format type
+ * @returns Promise resolving to RGB pixel data
+ *
+ * @example
+ * const rgb = await convertYUVToRGB(
+ *   frame.yPlane.toString(),
+ *   frame.uPlane.toString(),
+ *   frame.vPlane.toString(),
+ *   1920, 1080,
+ *   'nv21'
+ * );
+ */
+export async function convertYUVToRGB(
+  yBuffer: string,
+  uBuffer: string,
+  vBuffer: string,
+  width: number,
+  height: number,
+  pixelFormat: CameraPixelFormat
+): Promise<{ data: number[]; width: number; height: number }> {
+  if (width <= 0 || height <= 0) {
+    throw new VisionUtilsException(
+      'Width and height must be positive',
+      'INVALID_DIMENSIONS'
+    );
+  }
+
+  try {
+    const result = await VisionUtils.convertYUVToRGB(
+      yBuffer,
+      uBuffer,
+      vBuffer,
+      width,
+      height,
+      pixelFormat
+    );
+    return result as { data: number[]; width: number; height: number };
   } catch (error) {
     throw VisionUtilsException.fromNativeError(error);
   }

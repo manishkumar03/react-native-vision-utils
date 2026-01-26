@@ -599,4 +599,158 @@ public class VisionUtilsBridge: NSObject {
         cacheLock.unlock()
         resolve(stats as NSDictionary)
     }
+
+    // MARK: - Label Database
+
+    @objc
+    public static func getLabel(
+        _ index: Int,
+        options: NSDictionary,
+        resolve: @escaping (Any) -> Void,
+        reject: @escaping (String, String) -> Void
+    ) {
+        do {
+            let optionsDict = options as? [String: Any] ?? [:]
+            let dataset = optionsDict["dataset"] as? String ?? "coco"
+            let includeMetadata = optionsDict["includeMetadata"] as? Bool ?? false
+
+            let result = try LabelDatabase.shared.getLabel(
+                index: index,
+                dataset: dataset,
+                includeMetadata: includeMetadata
+            )
+
+            resolve(result)
+        } catch {
+            reject("LABEL_ERROR", error.localizedDescription)
+        }
+    }
+
+    @objc
+    public static func getTopLabels(
+        _ scores: NSArray,
+        options: NSDictionary,
+        resolve: @escaping (NSArray) -> Void,
+        reject: @escaping (String, String) -> Void
+    ) {
+        do {
+            guard let scoresArray = scores as? [NSNumber] else {
+                reject("INVALID_DATA", "Invalid scores format")
+                return
+            }
+
+            let doubleScores = scoresArray.map { $0.doubleValue }
+            let optionsDict = options as? [String: Any] ?? [:]
+            let result = try LabelDatabase.shared.getTopLabels(scores: doubleScores, options: optionsDict)
+
+            resolve(result as NSArray)
+        } catch {
+            reject("LABEL_ERROR", error.localizedDescription)
+        }
+    }
+
+    @objc
+    public static func getAllLabels(
+        _ dataset: String,
+        resolve: @escaping (NSArray) -> Void,
+        reject: @escaping (String, String) -> Void
+    ) {
+        do {
+            let result = try LabelDatabase.shared.getAllLabels(dataset: dataset)
+            resolve(result as NSArray)
+        } catch {
+            reject("LABEL_ERROR", error.localizedDescription)
+        }
+    }
+
+    @objc
+    public static func getDatasetInfo(
+        _ dataset: String,
+        resolve: @escaping (NSDictionary) -> Void,
+        reject: @escaping (String, String) -> Void
+    ) {
+        do {
+            let result = try LabelDatabase.shared.getDatasetInfo(dataset: dataset)
+            resolve(result as NSDictionary)
+        } catch {
+            reject("LABEL_ERROR", error.localizedDescription)
+        }
+    }
+
+    @objc
+    public static func getAvailableDatasets(
+        resolve: @escaping (NSArray) -> Void,
+        reject: @escaping (String, String) -> Void
+    ) {
+        let result = LabelDatabase.shared.getAvailableDatasets()
+        resolve(result as NSArray)
+    }
+
+    // MARK: - Camera Frame Processing
+
+    @objc
+    public static func processCameraFrame(
+        _ source: NSDictionary,
+        options: NSDictionary,
+        resolve: @escaping (NSDictionary) -> Void,
+        reject: @escaping (String, String) -> Void
+    ) {
+        do {
+            guard let sourceDict = source as? [String: Any] else {
+                reject("INVALID_SOURCE", "Invalid source format")
+                return
+            }
+
+            let width = sourceDict["width"] as? Int ?? 0
+            let height = sourceDict["height"] as? Int ?? 0
+            let pixelFormat = sourceDict["pixelFormat"] as? String ?? "yuv420"
+            let bytesPerRow = sourceDict["bytesPerRow"] as? Int ?? (width * 4)
+            let timestamp = sourceDict["timestamp"] as? Double
+            let orientation = sourceDict["orientation"] as? Int ?? 0
+
+            let frameSource = CameraFrameProcessor.FrameSource(
+                width: width,
+                height: height,
+                pixelFormat: pixelFormat,
+                bytesPerRow: bytesPerRow,
+                timestamp: timestamp,
+                orientation: orientation
+            )
+
+            let optionsDict = options as? [String: Any] ?? [:]
+
+            // Check for base64 data input
+            if let base64Data = sourceDict["dataBase64"] as? String,
+               let data = Data(base64Encoded: base64Data) {
+                let result = try data.withUnsafeBytes { (buffer: UnsafeRawBufferPointer) -> [String: Any] in
+                    return try CameraFrameProcessor.shared.processCameraFrame(
+                        buffer: buffer.baseAddress,
+                        source: frameSource,
+                        options: optionsDict
+                    )
+                }
+                resolve(result as NSDictionary)
+            } else {
+                // For pointer-based input, we need different handling
+                reject("INVALID_SOURCE", "Base64 data required for processCameraFrame. Use frame processor for direct buffer access.")
+            }
+        } catch {
+            reject("CAMERA_FRAME_ERROR", error.localizedDescription)
+        }
+    }
+
+    @objc
+    public static func convertYUVToRGB(
+        _ options: NSDictionary,
+        resolve: @escaping (NSDictionary) -> Void,
+        reject: @escaping (String, String) -> Void
+    ) {
+        do {
+            let optionsDict = options as? [String: Any] ?? [:]
+            let result = try CameraFrameProcessor.shared.convertYUVToRGB(options: optionsDict)
+            resolve(result as NSDictionary)
+        } catch {
+            reject("YUV_CONVERT_ERROR", error.localizedDescription)
+        }
+    }
 }

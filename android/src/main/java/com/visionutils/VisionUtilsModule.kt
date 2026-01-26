@@ -595,6 +595,122 @@ class VisionUtilsModule(reactContext: ReactApplicationContext) :
     promise.resolve(stats)
   }
 
+  // MARK: - Label Database
+
+  /**
+   * Get label by index from a dataset
+   */
+  override fun getLabel(index: Double, options: ReadableMap, promise: Promise) {
+    try {
+      val result = LabelDatabaseAndroid.getLabel(index.toInt(), options)
+      promise.resolve(result)
+    } catch (e: VisionUtilsException) {
+      promise.reject(e.code, e.message)
+    } catch (e: Exception) {
+      promise.reject("UNKNOWN", e.message ?: "Unknown error occurred")
+    }
+  }
+
+  /**
+   * Get top labels from prediction scores
+   */
+  override fun getTopLabels(scores: ReadableArray, options: ReadableMap, promise: Promise) {
+    try {
+      val result = LabelDatabaseAndroid.getTopLabels(scores, options)
+      promise.resolve(result)
+    } catch (e: VisionUtilsException) {
+      promise.reject(e.code, e.message)
+    } catch (e: Exception) {
+      promise.reject("UNKNOWN", e.message ?: "Unknown error occurred")
+    }
+  }
+
+  /**
+   * Get all labels for a dataset
+   */
+  override fun getAllLabels(dataset: String, promise: Promise) {
+    try {
+      val result = LabelDatabaseAndroid.getAllLabels(dataset)
+      promise.resolve(result)
+    } catch (e: VisionUtilsException) {
+      promise.reject(e.code, e.message)
+    } catch (e: Exception) {
+      promise.reject("UNKNOWN", e.message ?: "Unknown error occurred")
+    }
+  }
+
+  /**
+   * Get dataset information
+   */
+  override fun getDatasetInfo(dataset: String, promise: Promise) {
+    try {
+      val result = LabelDatabaseAndroid.getDatasetInfo(dataset)
+      promise.resolve(result)
+    } catch (e: VisionUtilsException) {
+      promise.reject(e.code, e.message)
+    } catch (e: Exception) {
+      promise.reject("UNKNOWN", e.message ?: "Unknown error occurred")
+    }
+  }
+
+  /**
+   * Get available datasets
+   */
+  override fun getAvailableDatasets(promise: Promise) {
+    try {
+      val result = LabelDatabaseAndroid.getAvailableDatasets()
+      promise.resolve(result)
+    } catch (e: Exception) {
+      promise.reject("UNKNOWN", e.message ?: "Unknown error occurred")
+    }
+  }
+
+  // MARK: - Camera Frame Processing
+
+  /**
+   * Process camera frame into ML-ready tensor
+   */
+  override fun processCameraFrame(source: ReadableMap, options: ReadableMap, promise: Promise) {
+    scope.launch {
+      try {
+        val result = CameraFrameAndroid.processCameraFrame(source, options)
+        withContext(Dispatchers.Main) {
+          promise.resolve(result)
+        }
+      } catch (e: VisionUtilsException) {
+        withContext(Dispatchers.Main) {
+          promise.reject(e.code, e.message)
+        }
+      } catch (e: Exception) {
+        withContext(Dispatchers.Main) {
+          promise.reject("UNKNOWN", e.message ?: "Unknown error occurred")
+        }
+      }
+    }
+  }
+
+  /**
+   * Direct YUV to RGB conversion
+   */
+  override fun convertYUVToRGB(options: ReadableMap, promise: Promise) {
+    scope.launch {
+      try {
+        val result = CameraFrameAndroid.convertYUVToRGB(options)
+        withContext(Dispatchers.Main) {
+          promise.resolve(result)
+        }
+      } catch (e: VisionUtilsException) {
+        withContext(Dispatchers.Main) {
+          promise.reject(e.code, e.message)
+        }
+      } catch (e: Exception) {
+        withContext(Dispatchers.Main) {
+          promise.reject("UNKNOWN", e.message ?: "Unknown error occurred")
+        }
+      }
+    }
+  }
+
   companion object {
     const val NAME = NativeVisionUtilsSpec.NAME
   }

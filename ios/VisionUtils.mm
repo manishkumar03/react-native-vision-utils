@@ -262,6 +262,91 @@
     }];
 }
 
+// MARK: - Label Database
+
+- (void)getLabel:(double)index
+         options:(NSDictionary *)options
+         resolve:(RCTPromiseResolveBlock)resolve
+          reject:(RCTPromiseRejectBlock)reject {
+    [VisionUtilsBridge getLabel:(NSInteger)index
+                        options:options
+                        resolve:^(id result) {
+        resolve(result);
+    } reject:^(NSString *code, NSString *message) {
+        reject(code, message, nil);
+    }];
+}
+
+- (void)getTopLabels:(NSArray *)scores
+             options:(NSDictionary *)options
+             resolve:(RCTPromiseResolveBlock)resolve
+              reject:(RCTPromiseRejectBlock)reject {
+    [VisionUtilsBridge getTopLabels:scores
+                            options:options
+                            resolve:^(NSArray *result) {
+        resolve(result);
+    } reject:^(NSString *code, NSString *message) {
+        reject(code, message, nil);
+    }];
+}
+
+- (void)getAllLabels:(NSString *)dataset
+             resolve:(RCTPromiseResolveBlock)resolve
+              reject:(RCTPromiseRejectBlock)reject {
+    [VisionUtilsBridge getAllLabels:dataset
+                            resolve:^(NSArray *result) {
+        resolve(result);
+    } reject:^(NSString *code, NSString *message) {
+        reject(code, message, nil);
+    }];
+}
+
+- (void)getDatasetInfo:(NSString *)dataset
+               resolve:(RCTPromiseResolveBlock)resolve
+                reject:(RCTPromiseRejectBlock)reject {
+    [VisionUtilsBridge getDatasetInfo:dataset
+                              resolve:^(NSDictionary *result) {
+        resolve(result);
+    } reject:^(NSString *code, NSString *message) {
+        reject(code, message, nil);
+    }];
+}
+
+- (void)getAvailableDatasets:(RCTPromiseResolveBlock)resolve
+                      reject:(RCTPromiseRejectBlock)reject {
+    [VisionUtilsBridge getAvailableDatasetsWithResolve:^(NSArray *result) {
+        resolve(result);
+    } reject:^(NSString *code, NSString *message) {
+        reject(code, message, nil);
+    }];
+}
+
+// MARK: - Camera Frame Processing
+
+- (void)processCameraFrame:(NSDictionary *)source
+                   options:(NSDictionary *)options
+                   resolve:(RCTPromiseResolveBlock)resolve
+                    reject:(RCTPromiseRejectBlock)reject {
+    [VisionUtilsBridge processCameraFrame:source
+                                  options:options
+                                  resolve:^(NSDictionary *result) {
+        resolve(result);
+    } reject:^(NSString *code, NSString *message) {
+        reject(code, message, nil);
+    }];
+}
+
+- (void)convertYUVToRGB:(NSDictionary *)options
+                resolve:(RCTPromiseResolveBlock)resolve
+                 reject:(RCTPromiseRejectBlock)reject {
+    [VisionUtilsBridge convertYUVToRGB:options
+                               resolve:^(NSDictionary *result) {
+        resolve(result);
+    } reject:^(NSString *code, NSString *message) {
+        reject(code, message, nil);
+    }];
+}
+
 // MARK: - TurboModule
 
 - (std::shared_ptr<facebook::react::TurboModule>)getTurboModule:

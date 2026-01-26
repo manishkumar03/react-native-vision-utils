@@ -174,6 +174,82 @@ export interface Spec extends TurboModule {
    */
   calculateQuantizationParams(data: number[], options: Object): Promise<Object>;
 
+  // ==========================================================================
+  // Label Database Methods
+  // ==========================================================================
+
+  /**
+   * Get a label by index from a dataset
+   * @param index - The class index
+   * @param dataset - The dataset name
+   * @param includeMetadata - Whether to include extra metadata
+   * @returns Promise resolving to label string or LabelInfo object
+   */
+  getLabel(
+    index: number,
+    dataset: string,
+    includeMetadata: boolean
+  ): Promise<Object>;
+
+  /**
+   * Get labels for top-K indices with confidence scores
+   * @param scores - Array of confidence scores
+   * @param options - GetTopLabelsOptions serialized as Object
+   * @returns Promise resolving to TopLabelResult array
+   */
+  getTopLabels(scores: number[], options: Object): Promise<Object>;
+
+  /**
+   * Get all labels for a dataset
+   * @param dataset - The dataset name
+   * @returns Promise resolving to array of labels
+   */
+  getAllLabels(dataset: string): Promise<string[]>;
+
+  /**
+   * Get dataset information
+   * @param dataset - The dataset name
+   * @returns Promise resolving to DatasetInfo
+   */
+  getDatasetInfo(dataset: string): Promise<Object>;
+
+  /**
+   * Get list of available datasets
+   * @returns Promise resolving to array of dataset names
+   */
+  getAvailableDatasets(): Promise<string[]>;
+
+  // ==========================================================================
+  // Camera Frame Methods
+  // ==========================================================================
+
+  /**
+   * Process a camera frame directly to tensor data
+   * @param frameSource - CameraFrameSource serialized as Object
+   * @param options - CameraFrameOptions serialized as Object
+   * @returns Promise resolving to CameraFrameResult
+   */
+  processCameraFrame(frameSource: Object, options: Object): Promise<Object>;
+
+  /**
+   * Convert YUV camera frame to RGB
+   * @param yBuffer - Y plane data or pointer
+   * @param uBuffer - U plane data or pointer
+   * @param vBuffer - V plane data or pointer
+   * @param width - Frame width
+   * @param height - Frame height
+   * @param pixelFormat - YUV format type
+   * @returns Promise resolving to RGB data
+   */
+  convertYUVToRGB(
+    yBuffer: string,
+    uBuffer: string,
+    vBuffer: string,
+    width: number,
+    height: number,
+    pixelFormat: string
+  ): Promise<Object>;
+
   /**
    * Clear the pixel data cache
    */

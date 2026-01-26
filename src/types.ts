@@ -1120,6 +1120,252 @@ export type DeepPartial<T> = {
   [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
 };
 
+// =============================================================================
+// Label Database Types
+// =============================================================================
+
+/**
+ * Supported label datasets
+ */
+export type LabelDataset =
+  | 'coco'
+  | 'coco91'
+  | 'imagenet'
+  | 'imagenet21k'
+  | 'voc'
+  | 'cifar10'
+  | 'cifar100'
+  | 'places365'
+  | 'ade20k';
+
+/**
+ * Label info with optional metadata
+ */
+export interface LabelInfo {
+  /** The label index */
+  index: number;
+  /** Human-readable label name */
+  name: string;
+  /** Optional display name (more user-friendly) */
+  displayName?: string;
+  /** Optional supercategory (e.g., "animal" for "dog") */
+  supercategory?: string;
+}
+
+/**
+ * Options for getting a label
+ */
+export interface GetLabelOptions {
+  /** The dataset to use (default: 'coco') */
+  dataset?: LabelDataset;
+  /** Whether to include metadata (supercategory, display name) */
+  includeMetadata?: boolean;
+}
+
+/**
+ * Options for getting top-K labels
+ */
+export interface GetTopLabelsOptions {
+  /** The dataset to use (default: 'coco') */
+  dataset?: LabelDataset;
+  /** Whether to include metadata (supercategory, display name) */
+  includeMetadata?: boolean;
+  /** Number of top results to return (default: 5) */
+  k?: number;
+  /** Minimum confidence threshold (0-1, default: 0) */
+  minConfidence?: number;
+}
+
+/**
+ * Result of top-K label lookup
+ */
+export interface TopLabelResult {
+  /** The label index */
+  index: number;
+  /** Human-readable label name */
+  label: string;
+  /** Confidence score (0-1) */
+  confidence: number;
+  /** Optional supercategory */
+  supercategory?: string;
+}
+
+/**
+ * Dataset metadata
+ */
+export interface DatasetInfo {
+  /** Dataset name */
+  name: LabelDataset;
+  /** Number of classes */
+  numClasses: number;
+  /** Description of the dataset */
+  description: string;
+  /** Whether the dataset is loaded/available */
+  isAvailable: boolean;
+}
+
+// =============================================================================
+// Camera Frame Types
+// =============================================================================
+
+/**
+ * Pixel format of camera frame buffer
+ */
+export type CameraPixelFormat =
+  | 'yuv420'
+  | 'yuv422'
+  | 'nv12'
+  | 'nv21'
+  | 'bgra'
+  | 'rgba'
+  | 'rgb';
+
+/**
+ * Camera frame orientation
+ */
+export type FrameOrientation = 0 | 1 | 2 | 3;
+
+/**
+ * Frame orientation strings (user-friendly)
+ */
+export type FrameOrientationString = 'up' | 'down' | 'left' | 'right';
+
+/**
+ * Camera frame source (from react-native-vision-camera or similar)
+ */
+export interface CameraFrameSource {
+  /** Width of the frame in pixels */
+  width: number;
+
+  /** Height of the frame in pixels */
+  height: number;
+
+  /** Pixel format of the frame */
+  pixelFormat: CameraPixelFormat;
+
+  /** Bytes per row (may include padding) */
+  bytesPerRow?: number;
+
+  /** Frame orientation (0=up, 1=down, 2=left, 3=right) */
+  orientation?: FrameOrientation | FrameOrientationString;
+
+  /** Timestamp when frame was captured */
+  timestamp?: number;
+
+  /** Base64-encoded frame data (for JS-accessible processing) */
+  dataBase64?: string;
+
+  /** Plane info for planar formats (YUV) */
+  planes?: CameraFramePlane[];
+}
+
+/**
+ * Plane information for planar formats like YUV
+ */
+export interface CameraFramePlane {
+  /** Bytes per row for this plane */
+  bytesPerRow: number;
+  /** Height of this plane */
+  height: number;
+  /** Byte offset from start of buffer */
+  offset?: number;
+}
+
+/**
+ * Options for processing camera frames
+ */
+export interface CameraFrameOptions {
+  /** Output width (defaults to input width) */
+  outputWidth?: number;
+
+  /** Output height (defaults to input height) */
+  outputHeight?: number;
+
+  /** Whether to normalize pixel values (default: true) */
+  normalize?: boolean;
+
+  /** Output format: 'rgb' or 'grayscale' (default: 'rgb') */
+  outputFormat?: 'rgb' | 'grayscale';
+
+  /** Per-channel mean for normalization (default: [0, 0, 0]) */
+  mean?: number[];
+
+  /** Per-channel std for normalization (default: [1, 1, 1]) */
+  std?: number[];
+}
+
+/**
+ * Result of camera frame processing
+ */
+export interface CameraFrameResult {
+  /** Processed pixel data as normalized floats */
+  tensor: number[];
+
+  /** Tensor shape [height, width, channels] */
+  shape: number[];
+
+  /** Output width */
+  width: number;
+
+  /** Output height */
+  height: number;
+
+  /** Processing time in milliseconds */
+  processingTimeMs: number;
+}
+
+/**
+ * Options for YUV to RGB conversion
+ */
+export interface ConvertYUVOptions {
+  /** Width of the frame */
+  width: number;
+
+  /** Height of the frame */
+  height: number;
+
+  /** Pixel format of input */
+  pixelFormat?: CameraPixelFormat;
+
+  /** Base64-encoded Y plane data */
+  yPlaneBase64?: string;
+
+  /** Base64-encoded U plane data */
+  uPlaneBase64?: string;
+
+  /** Base64-encoded V plane data */
+  vPlaneBase64?: string;
+
+  /** Base64-encoded interleaved UV plane (for NV12) */
+  uvPlaneBase64?: string;
+
+  /** Output format: 'rgb' or 'base64' */
+  outputFormat?: 'rgb' | 'base64';
+}
+
+/**
+ * Result of YUV to RGB conversion
+ */
+export interface ConvertYUVResult {
+  /** RGB pixel data (if outputFormat='rgb') */
+  data?: number[];
+
+  /** Base64-encoded RGB data (if outputFormat='base64') */
+  dataBase64?: string;
+
+  /** Output width */
+  width: number;
+
+  /** Output height */
+  height: number;
+
+  /** Number of channels (always 3 for RGB) */
+  channels: number;
+
+  /** Processing time in milliseconds */
+  processingTimeMs: number;
+}
+
 /**
  * Type for internal prepared options (with all defaults applied)
  */

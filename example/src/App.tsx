@@ -26,10 +26,16 @@ import {
   quantize,
   dequantize,
   calculateQuantizationParams,
+  getLabel,
+  getTopLabels,
+  getDatasetInfo,
+  getAvailableDatasets,
+  processCameraFrame,
   type PixelDataResult,
   type ColorFormat,
   type DataLayout,
   type NormalizationPreset,
+  type LabelDataset,
 } from 'react-native-vision-utils';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -667,6 +673,157 @@ const App: React.FC = () => {
     }
   }, []);
 
+  // Test label database - get single label
+  const testGetLabel = useCallback(async () => {
+    setLoading(true);
+    try {
+      // Get label with metadata
+      const labelInfo = await getLabel(0, 'coco', true);
+
+      const info = labelInfo as {
+        index: number;
+        name: string;
+        displayName: string;
+        supercategory?: string;
+      };
+
+      Alert.alert(
+        'Label Database - Single Label',
+        `Index 0 in COCO:\n` +
+          `Name: ${info.name}\n` +
+          `Display: ${info.displayName}\n` +
+          `Category: ${info.supercategory || 'N/A'}`
+      );
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      Alert.alert('Error', errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Test label database - get top labels from mock scores
+  const testTopLabels = useCallback(async () => {
+    setLoading(true);
+    try {
+      // Create mock prediction scores (80 classes for COCO)
+      const mockScores = Array(80).fill(0.01);
+      mockScores[0] = 0.85; // person
+      mockScores[15] = 0.72; // cat
+      mockScores[16] = 0.45; // dog
+      mockScores[2] = 0.38; // car
+
+      const topLabels = await getTopLabels(mockScores, {
+        dataset: 'coco',
+        k: 5,
+        minConfidence: 0.1,
+        includeMetadata: true,
+      });
+
+      const labelStrings = topLabels
+        .map(
+          (l: { label: string; confidence: number }) =>
+            `${l.label}: ${(l.confidence * 100).toFixed(1)}%`
+        )
+        .join('\n');
+
+      Alert.alert(
+        'Label Database - Top Predictions',
+        `Top ${topLabels.length} from mock scores:\n\n${labelStrings}`
+      );
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      Alert.alert('Error', errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Test available datasets
+  const testAvailableDatasets = useCallback(async () => {
+    setLoading(true);
+    try {
+      const datasets = await getAvailableDatasets();
+      const infos: string[] = [];
+
+      for (const dataset of datasets.slice(0, 4)) {
+        const info = await getDatasetInfo(dataset as LabelDataset);
+        infos.push(`${info.name}: ${info.numClasses} classes`);
+      }
+
+      Alert.alert(
+        'Available Datasets',
+        `Found ${datasets.length} datasets:\n\n${infos.join(
+          '\n'
+        )}\n\n...and more`
+      );
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      Alert.alert('Error', errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Test camera frame processing (simulated with base64 data)
+  const testCameraFrameProcessing = useCallback(async () => {
+    setLoading(true);
+    try {
+      // Create a small simulated RGB frame (8x8 pixels)
+      const width = 8;
+      const height = 8;
+      const rgbData = new Uint8Array(width * height * 3);
+
+      // Fill with a gradient pattern
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          const idx = (y * width + x) * 3;
+          rgbData[idx] = Math.floor((x / width) * 255); // R
+          rgbData[idx + 1] = Math.floor((y / height) * 255); // G
+          rgbData[idx + 2] = 128; // B
+        }
+      }
+
+      // Convert to base64
+      const binaryStr = String.fromCharCode(...rgbData);
+      const base64Data = btoa(binaryStr);
+
+      const result = await processCameraFrame(
+        {
+          width,
+          height,
+          pixelFormat: 'rgb',
+          bytesPerRow: width * 3,
+          dataBase64: base64Data,
+        },
+        {
+          outputWidth: 4,
+          outputHeight: 4,
+          normalize: true,
+          outputFormat: 'rgb',
+          mean: [0.485, 0.456, 0.406],
+          std: [0.229, 0.224, 0.225],
+        }
+      );
+
+      const sampleValues = result.tensor.slice(0, 3).map((v) => v.toFixed(3));
+
+      Alert.alert(
+        'Camera Frame Processing',
+        `Input: ${width}x${height} RGB\n` +
+          `Output: ${result.width}x${result.height}\n` +
+          `Shape: [${result.shape.join(', ')}]\n` +
+          `Time: ${result.processingTimeMs.toFixed(2)}ms\n` +
+          `Sample (normalized): [${sampleValues.join(', ')}]`
+      );
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      Alert.alert('Error', errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const clearResults = useCallback(() => {
     setResults([]);
   }, []);
@@ -902,6 +1059,62 @@ const App: React.FC = () => {
           </TouchableOpacity>
         </View>
 
+        {/* Label Database */}
+        <Text style={styles.sectionTitle}>🏷️ Label Database</Text>
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity
+            style={[
+              styles.button,
+              styles.labelButton,
+              loading && styles.buttonDisabled,
+            ]}
+            onPress={testGetLabel}
+            disabled={loading}
+          >
+            <Text style={styles.buttonText}>Get Single Label</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.button,
+              styles.labelButton,
+              loading && styles.buttonDisabled,
+            ]}
+            onPress={testTopLabels}
+            disabled={loading}
+          >
+            <Text style={styles.buttonText}>Top Predictions</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.button,
+              styles.labelButton,
+              loading && styles.buttonDisabled,
+            ]}
+            onPress={testAvailableDatasets}
+            disabled={loading}
+          >
+            <Text style={styles.buttonText}>Available Datasets</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Camera Frame Processing */}
+        <Text style={styles.sectionTitle}>📹 Camera Frame Utils</Text>
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity
+            style={[
+              styles.button,
+              styles.cameraButton,
+              loading && styles.buttonDisabled,
+            ]}
+            onPress={testCameraFrameProcessing}
+            disabled={loading}
+          >
+            <Text style={styles.buttonText}>Process Camera Frame</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Cache Management */}
         <Text style={styles.sectionTitle}>💾 Cache Management</Text>
         <View style={styles.buttonContainer}>
@@ -1038,6 +1251,12 @@ const styles = StyleSheet.create({
   },
   quantizeButton: {
     backgroundColor: '#FF2D55',
+  },
+  labelButton: {
+    backgroundColor: '#30D158',
+  },
+  cameraButton: {
+    backgroundColor: '#64D2FF',
   },
   cacheButton: {
     backgroundColor: '#5AC8FA',
