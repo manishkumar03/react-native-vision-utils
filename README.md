@@ -5,6 +5,7 @@ A high-performance React Native library for image preprocessing optimized for ML
 ## Features
 
 - 🚀 **High Performance**: Native implementations in Swift (iOS) and Kotlin (Android)
+- 🔢 **Raw Pixel Data**: Extract pixel values as typed arrays (Float32, Int32, Uint8) ready for ML inference
 - 🎨 **Multiple Color Formats**: RGB, RGBA, BGR, BGRA, Grayscale, HSV, HSL, LAB, YUV, YCbCr
 - 📐 **Flexible Resizing**: Cover, contain, stretch, and letterbox strategies
 - 🔢 **ML-Ready Normalization**: ImageNet, TensorFlow, custom presets
