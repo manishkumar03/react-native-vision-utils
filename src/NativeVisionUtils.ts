@@ -151,6 +151,14 @@ export interface Spec extends TurboModule {
   applyAugmentations(source: Object, augmentations: Object): Promise<Object>;
 
   /**
+   * Apply color jitter augmentation with granular control
+   * @param source - ImageSource serialized as Object
+   * @param options - ColorJitterOptions serialized as Object
+   * @returns Promise resolving to ColorJitterResult as Object
+   */
+  colorJitter(source: Object, options: Object): Promise<Object>;
+
+  /**
    * Quantize float data to int8/uint8/int16
    * @param data - Float pixel data as number array
    * @param options - QuantizeOptions serialized as Object

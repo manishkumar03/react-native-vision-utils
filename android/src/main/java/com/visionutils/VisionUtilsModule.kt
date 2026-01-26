@@ -489,6 +489,36 @@ class VisionUtilsModule(reactContext: ReactApplicationContext) :
   }
 
   /**
+   * Apply color jitter augmentation with granular control
+   */
+  override fun colorJitter(
+    source: ReadableMap,
+    options: ReadableMap,
+    promise: Promise
+  ) {
+    scope.launch {
+      try {
+        val context = reactApplicationContext.applicationContext
+        val imageSource = ImageSource.fromMap(source)
+        val bitmap = ImageLoader.loadImage(context, imageSource)
+        val result = ColorJitterAndroid.apply(bitmap, options)
+
+        withContext(Dispatchers.Main) {
+          promise.resolve(result)
+        }
+      } catch (e: VisionUtilsException) {
+        withContext(Dispatchers.Main) {
+          promise.reject(e.code, e.message)
+        }
+      } catch (e: Exception) {
+        withContext(Dispatchers.Main) {
+          promise.reject("COLOR_JITTER_ERROR", e.message ?: "Color jitter failed")
+        }
+      }
+    }
+  }
+
+  /**
    * Quantize float data to integer format
    */
   override fun quantize(

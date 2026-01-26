@@ -421,6 +421,65 @@ console.log(augmented.width);
 console.log(augmented.height);
 ```
 
+#### `colorJitter(source, options)`
+
+Apply color jitter augmentation with granular control over brightness, contrast, saturation, and hue. More flexible than `applyAugmentations` - supports ranges for each property with random sampling and optional seed for reproducibility.
+
+```typescript
+import { colorJitter } from 'react-native-vision-utils';
+
+// Basic usage with symmetric ranges
+const result = await colorJitter(
+  { type: 'file', value: '/path/to/image.jpg' },
+  {
+    brightness: 0.2,     // Random in [-0.2, +0.2]
+    contrast: 0.2,       // Random in [0.8, 1.2]
+    saturation: 0.3,     // Random in [0.7, 1.3]
+    hue: 0.1,            // Random in [-0.1, +0.1] (fraction of 360°)
+  }
+);
+
+console.log(result.base64);              // Augmented image
+console.log(result.appliedBrightness);   // Actual value applied
+console.log(result.appliedContrast);
+console.log(result.appliedSaturation);
+console.log(result.appliedHue);
+
+// Asymmetric ranges with seed for reproducibility
+const reproducible = await colorJitter(
+  { type: 'url', value: 'https://example.com/image.jpg' },
+  {
+    brightness: [-0.1, 0.3],  // More brightening than darkening
+    contrast: [0.8, 1.5],     // Allow up to 50% more contrast
+    seed: 42,                  // Same seed = same random values
+  }
+);
+```
+
+**Options:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `brightness` | number \| [min, max] | 0 | Additive brightness adjustment. Single value creates symmetric range [-v, +v] |
+| `contrast` | number \| [min, max] | 1 | Contrast multiplier. Single value creates range [max(0, 1-v), 1+v] |
+| `saturation` | number \| [min, max] | 1 | Saturation multiplier. Single value creates range [max(0, 1-v), 1+v] |
+| `hue` | number \| [min, max] | 0 | Hue shift as fraction of color wheel (0-1 = 0-360°). Single value creates symmetric range [-v, +v] |
+| `seed` | number | random | Seed for reproducible random sampling |
+
+**Result:**
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `base64` | string | Augmented image as base64 PNG |
+| `width` | number | Output image width |
+| `height` | number | Output image height |
+| `appliedBrightness` | number | Actual brightness value applied |
+| `appliedContrast` | number | Actual contrast value applied |
+| `appliedSaturation` | number | Actual saturation value applied |
+| `appliedHue` | number | Actual hue shift value applied |
+| `seed` | number | Seed used for random generation |
+| `processingTimeMs` | number | Processing time in milliseconds |
+
 ### Multi-Crop Operations
 
 #### `fiveCrop(source, options, pixelOptions)`

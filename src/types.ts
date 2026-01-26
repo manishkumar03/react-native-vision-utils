@@ -2190,3 +2190,94 @@ export interface BatchAssemblyResult {
   /** Processing time in milliseconds */
   processingTimeMs: number;
 }
+
+// =============================================================================
+// Color Jitter Types
+// =============================================================================
+
+/**
+ * Options for color jitter augmentation.
+ * Each parameter can be a single value for symmetric range or a tuple for asymmetric range.
+ * Values are applied randomly within the specified range.
+ *
+ * @example
+ * // Symmetric ranges (value becomes [-value, +value] or [1-value, 1+value])
+ * {
+ *   brightness: 0.2,      // brightness in range [-0.2, +0.2]
+ *   contrast: 0.2,        // contrast in range [0.8, 1.2]
+ *   saturation: 0.3,      // saturation in range [0.7, 1.3]
+ *   hue: 0.1,             // hue in range [-0.1, +0.1] (fraction of 360°)
+ * }
+ *
+ * @example
+ * // Asymmetric ranges [min, max]
+ * {
+ *   brightness: [-0.1, 0.3],   // brightness in range [-0.1, +0.3]
+ *   contrast: [0.8, 1.5],      // contrast multiplier in range [0.8, 1.5]
+ *   saturation: [0.5, 1.5],    // saturation multiplier in range [0.5, 1.5]
+ *   hue: [-0.2, 0.1],          // hue shift in range [-0.2, +0.1]
+ * }
+ */
+export interface ColorJitterOptions {
+  /**
+   * Brightness adjustment range.
+   * - Single value: symmetric range [-value, +value]
+   * - Tuple [min, max]: asymmetric range
+   * Values are added to pixel values (0 = no change)
+   */
+  brightness?: number | [number, number];
+
+  /**
+   * Contrast adjustment range.
+   * - Single value: range [max(0, 1-value), 1+value]
+   * - Tuple [min, max]: asymmetric range
+   * Values multiply pixel deviation from mean (1 = no change)
+   */
+  contrast?: number | [number, number];
+
+  /**
+   * Saturation adjustment range.
+   * - Single value: range [max(0, 1-value), 1+value]
+   * - Tuple [min, max]: asymmetric range
+   * Values multiply saturation (1 = no change, 0 = grayscale)
+   */
+  saturation?: number | [number, number];
+
+  /**
+   * Hue shift range as fraction of color wheel (0-1 maps to 0-360°).
+   * - Single value: symmetric range [-value, +value]
+   * - Tuple [min, max]: asymmetric range
+   * Values shift hue cyclically (0 = no change)
+   */
+  hue?: number | [number, number];
+
+  /**
+   * Random seed for reproducible jitter (optional).
+   * If not provided, random values are generated.
+   */
+  seed?: number;
+}
+
+/**
+ * Result from color jitter operation
+ */
+export interface ColorJitterResult {
+  /** Augmented image as base64 PNG */
+  base64: string;
+  /** Output image width */
+  width: number;
+  /** Output image height */
+  height: number;
+  /** Actual brightness value applied */
+  appliedBrightness: number;
+  /** Actual contrast value applied */
+  appliedContrast: number;
+  /** Actual saturation value applied */
+  appliedSaturation: number;
+  /** Actual hue shift value applied */
+  appliedHue: number;
+  /** Seed used for random generation */
+  seed: number;
+  /** Processing time in milliseconds */
+  processingTimeMs: number;
+}

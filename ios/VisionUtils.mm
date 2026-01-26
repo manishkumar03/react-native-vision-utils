@@ -201,6 +201,19 @@
     }];
 }
 
+- (void)colorJitter:(NSDictionary *)source
+            options:(NSDictionary *)options
+            resolve:(RCTPromiseResolveBlock)resolve
+             reject:(RCTPromiseRejectBlock)reject {
+    [VisionUtilsBridge colorJitter:source
+                           options:options
+                           resolve:^(NSDictionary *result) {
+        resolve(result);
+    } reject:^(NSString *code, NSString *message) {
+        reject(code, message, nil);
+    }];
+}
+
 // MARK: - Quantization
 
 - (void)quantize:(NSArray *)data

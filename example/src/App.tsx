@@ -18,6 +18,7 @@ import {
   validateImage,
   getImageStatistics,
   applyAugmentations,
+  colorJitter,
   extractChannel,
   tensorToImage,
   fiveCrop,
@@ -410,6 +411,41 @@ const App: React.FC = () => {
         `Processed in ${timeMs.toFixed(2)}ms\nOutput: ${
           result.base64 ? 'Generated' : 'N/A'
         }`
+      );
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      Alert.alert('Error', errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentImage]);
+
+  // Test color jitter augmentation
+  const testColorJitter = useCallback(async () => {
+    setLoading(true);
+    try {
+      const result = await colorJitter(
+        { type: 'url', value: currentImage },
+        {
+          brightness: 0.3,
+          contrast: 0.2,
+          saturation: 0.4,
+          hue: 0.1,
+          seed: 42, // For reproducibility
+        }
+      );
+      if (result.base64) {
+        setProcessedImageUri(`data:image/png;base64,${result.base64}`);
+      }
+      Alert.alert(
+        'Color Jitter Applied',
+        `Applied values:\n` +
+          `  Brightness: ${result.appliedBrightness.toFixed(3)}\n` +
+          `  Contrast: ${result.appliedContrast.toFixed(3)}\n` +
+          `  Saturation: ${result.appliedSaturation.toFixed(3)}\n` +
+          `  Hue: ${result.appliedHue.toFixed(3)}\n\n` +
+          `Seed: ${result.seed}\n` +
+          `Time: ${result.processingTimeMs.toFixed(2)}ms`
       );
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
@@ -1700,6 +1736,18 @@ const App: React.FC = () => {
               disabled={loading}
             >
               <Text style={styles.buttonText}>Apply Augmentations</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.augmentButton,
+                loading && styles.buttonDisabled,
+              ]}
+              onPress={testColorJitter}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>Color Jitter</Text>
             </TouchableOpacity>
 
             <TouchableOpacity

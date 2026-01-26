@@ -99,6 +99,9 @@ import {
   // Batch Assembly Types
   type BatchAssemblyOptions,
   type BatchAssemblyResult,
+  // Color Jitter Types
+  type ColorJitterOptions,
+  type ColorJitterResult,
 } from './types';
 
 // Re-export all types
@@ -1311,6 +1314,96 @@ export async function applyAugmentations(
       source as unknown as Object,
       augmentations as unknown as Object
     )) as { base64: string; processingTimeMs: number };
+    return result;
+  } catch (error) {
+    throw VisionUtilsException.fromNativeError(error);
+  }
+}
+
+/**
+ * Apply color jitter augmentation with granular control over color properties.
+ *
+ * More granular than applyAugmentations - allows specifying ranges for each
+ * color property, with random sampling within those ranges. Supports seeded
+ * randomness for reproducible augmentation pipelines.
+ *
+ * @param source - Image source specification
+ * @param options - Color jitter options with ranges for brightness, contrast, saturation, hue
+ * @returns Promise resolving to ColorJitterResult with the augmented image and applied values
+ *
+ * @example
+ * // Basic color jitter with symmetric ranges
+ * const result = await colorJitter(
+ *   { type: 'file', value: '/path/to/image.jpg' },
+ *   {
+ *     brightness: 0.2,     // Random in [-0.2, +0.2]
+ *     contrast: 0.2,       // Random in [0.8, 1.2]
+ *     saturation: 0.3,     // Random in [0.7, 1.3]
+ *     hue: 0.1,            // Random in [-0.1, +0.1]
+ *   }
+ * );
+ * console.log('Applied brightness:', result.appliedBrightness);
+ *
+ * @example
+ * // Asymmetric ranges with seed for reproducibility
+ * const result = await colorJitter(
+ *   { type: 'url', value: 'https://example.com/image.jpg' },
+ *   {
+ *     brightness: [-0.1, 0.3],  // More brightening than darkening
+ *     contrast: [0.8, 1.5],     // Allow up to 50% more contrast
+ *     seed: 42,                  // Reproducible results
+ *   }
+ * );
+ *
+ * @example
+ * // Use in training augmentation pipeline
+ * const augmentedBatch = await Promise.all(
+ *   imageUrls.map((url, i) =>
+ *     colorJitter(
+ *       { type: 'url', value: url },
+ *       { brightness: 0.2, contrast: 0.2, saturation: 0.2, hue: 0.05, seed: i }
+ *     )
+ *   )
+ * );
+ */
+export async function colorJitter(
+  source: ImageSource,
+  options: ColorJitterOptions
+): Promise<ColorJitterResult> {
+  try {
+    validateSource(source);
+
+    // Validate ranges
+    const validateRange = (
+      name: string,
+      value: number | [number, number] | undefined
+    ) => {
+      if (value === undefined) return;
+      if (Array.isArray(value)) {
+        if (value.length !== 2) {
+          throw new VisionUtilsException(
+            'INVALID_OPTIONS',
+            `${name} range must be a tuple of [min, max]`
+          );
+        }
+        if (value[0] > value[1]) {
+          throw new VisionUtilsException(
+            'INVALID_OPTIONS',
+            `${name} range min must be <= max`
+          );
+        }
+      }
+    };
+
+    validateRange('brightness', options.brightness);
+    validateRange('contrast', options.contrast);
+    validateRange('saturation', options.saturation);
+    validateRange('hue', options.hue);
+
+    const result = (await VisionUtils.colorJitter(
+      source as unknown as Object,
+      options as unknown as Object
+    )) as ColorJitterResult;
     return result;
   } catch (error) {
     throw VisionUtilsException.fromNativeError(error);

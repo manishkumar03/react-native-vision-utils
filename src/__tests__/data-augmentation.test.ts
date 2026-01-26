@@ -1,5 +1,5 @@
 /**
- * @fileoverview Tests for grid extraction, random crop, tensor validation, and batch assembly functions.
+ * @fileoverview Tests for grid extraction, random crop, tensor validation, batch assembly, and color jitter functions.
  */
 
 import {
@@ -7,12 +7,14 @@ import {
   randomCrop,
   validateTensor,
   assembleBatch,
+  colorJitter,
 } from '../index';
 import type {
   GridExtractOptions,
   RandomCropOptions,
   TensorSpec,
   PixelDataResult,
+  ColorJitterOptions,
 } from '../types';
 import NativeVisionUtils from '../NativeVisionUtils';
 
@@ -22,6 +24,7 @@ jest.mock('../NativeVisionUtils', () => ({
   default: {
     extractGrid: jest.fn(),
     randomCrop: jest.fn(),
+    colorJitter: jest.fn(),
   },
 }));
 
@@ -389,6 +392,111 @@ describe('Batch Assembly', () => {
 
       expect(result.batchSize).toBe(4);
       expect(result.shape).toEqual([4, 1, 1, 3]);
+    });
+  });
+});
+
+describe('Color Jitter', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe('colorJitter', () => {
+    it('should call native colorJitter with correct parameters', async () => {
+      const mockResult = {
+        base64: 'mockBase64Data',
+        width: 224,
+        height: 224,
+        appliedBrightness: 0.1,
+        appliedContrast: 1.05,
+        appliedSaturation: 0.95,
+        appliedHue: 0.02,
+        seed: 42,
+        processingTimeMs: 15,
+      };
+
+      mockedNative.colorJitter!.mockResolvedValue(mockResult);
+
+      const source = { type: 'file' as const, value: '/path/to/test.jpg' };
+      const options: ColorJitterOptions = {
+        brightness: 0.2,
+        contrast: 0.2,
+        saturation: 0.3,
+        hue: 0.1,
+        seed: 42,
+      };
+
+      const result = await colorJitter(source, options);
+
+      expect(mockedNative.colorJitter).toHaveBeenCalledWith(source, options);
+      expect(result.appliedBrightness).toBe(0.1);
+      expect(result.appliedContrast).toBe(1.05);
+      expect(result.seed).toBe(42);
+    });
+
+    it('should accept asymmetric ranges as tuples', async () => {
+      const mockResult = {
+        base64: 'mockBase64Data',
+        width: 224,
+        height: 224,
+        appliedBrightness: 0.2,
+        appliedContrast: 1.3,
+        appliedSaturation: 1.0,
+        appliedHue: 0.0,
+        seed: 123,
+        processingTimeMs: 10,
+      };
+
+      mockedNative.colorJitter!.mockResolvedValue(mockResult);
+
+      const source = {
+        type: 'url' as const,
+        value: 'https://example.com/test.jpg',
+      };
+      const options: ColorJitterOptions = {
+        brightness: [-0.1, 0.3],
+        contrast: [0.8, 1.5],
+      };
+
+      const result = await colorJitter(source, options);
+
+      expect(mockedNative.colorJitter).toHaveBeenCalledWith(source, options);
+      expect(result.appliedBrightness).toBe(0.2);
+      expect(result.appliedContrast).toBe(1.3);
+    });
+
+    it('should reject invalid range where min > max', async () => {
+      const source = { type: 'file' as const, value: '/path/to/test.jpg' };
+      const options: ColorJitterOptions = {
+        brightness: [0.5, -0.5], // Invalid: min > max
+      };
+
+      await expect(colorJitter(source, options)).rejects.toThrow(
+        'brightness range min must be <= max'
+      );
+    });
+
+    it('should work without any options', async () => {
+      const mockResult = {
+        base64: 'mockBase64Data',
+        width: 224,
+        height: 224,
+        appliedBrightness: 0,
+        appliedContrast: 1,
+        appliedSaturation: 1,
+        appliedHue: 0,
+        seed: 999,
+        processingTimeMs: 5,
+      };
+
+      mockedNative.colorJitter!.mockResolvedValue(mockResult);
+
+      const source = { type: 'file' as const, value: '/path/to/test.jpg' };
+      const result = await colorJitter(source, {});
+
+      expect(mockedNative.colorJitter).toHaveBeenCalled();
+      expect(result.appliedBrightness).toBe(0);
+      expect(result.appliedContrast).toBe(1);
     });
   });
 });
