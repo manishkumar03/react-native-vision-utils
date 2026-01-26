@@ -1038,6 +1038,8 @@ class VisionUtilsModule(reactContext: ReactApplicationContext) :
           putArray("indices", indicesArray)
 
           putInt("suppressedCount", result.suppressedCount)
+          putInt("totalBefore", result.totalBefore)
+          putInt("totalAfter", result.totalAfter)
           putDouble("processingTimeMs", result.processingTimeMs)
         }
 

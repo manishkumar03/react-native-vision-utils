@@ -23,6 +23,8 @@ data class NMSResult(
     val indices: List<Int>,
     val detections: List<Map<String, Any>>,
     val suppressedCount: Int,
+    val totalBefore: Int,
+    val totalAfter: Int,
     val processingTimeMs: Double
 )
 
@@ -311,6 +313,8 @@ object BoundingBoxUtilsAndroid {
             indices = keepIndices,
             detections = keepDetections,
             suppressedCount = detections.size - keepIndices.size,
+            totalBefore = detections.size,
+            totalAfter = keepIndices.size,
             processingTimeMs = processingTimeMs
         )
     }

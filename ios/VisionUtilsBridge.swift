@@ -872,20 +872,20 @@ public class VisionUtilsBridge: NSObject {
             }
 
             let optionsDict = options as? [String: Any] ?? [:]
-            let sourceWidth = optionsDict["sourceWidth"] as? Double ?? 1.0
-            let sourceHeight = optionsDict["sourceHeight"] as? Double ?? 1.0
-            let targetWidth = optionsDict["targetWidth"] as? Double ?? 1.0
-            let targetHeight = optionsDict["targetHeight"] as? Double ?? 1.0
+            let fromWidth = optionsDict["fromWidth"] as? Double ?? 1.0
+            let fromHeight = optionsDict["fromHeight"] as? Double ?? 1.0
+            let toWidth = optionsDict["toWidth"] as? Double ?? 1.0
+            let toHeight = optionsDict["toHeight"] as? Double ?? 1.0
             let format = optionsDict["format"] as? String ?? "xyxy"
             let clip = optionsDict["clip"] as? Bool ?? true
 
             let doubleBoxes = boxesArray.map { $0.map { $0.doubleValue } }
             let result = try BoundingBoxUtils.scaleBoxes(
                 boxes: doubleBoxes,
-                sourceWidth: sourceWidth,
-                sourceHeight: sourceHeight,
-                targetWidth: targetWidth,
-                targetHeight: targetHeight,
+                sourceWidth: fromWidth,
+                sourceHeight: fromHeight,
+                targetWidth: toWidth,
+                targetHeight: toHeight,
                 format: format,
                 clip: clip
             )
@@ -893,6 +893,7 @@ public class VisionUtilsBridge: NSObject {
             let processingTimeMs = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
             resolve([
                 "boxes": result,
+                "format": format,
                 "processingTimeMs": processingTimeMs
             ] as NSDictionary)
         } catch {
@@ -924,9 +925,27 @@ public class VisionUtilsBridge: NSObject {
                 format: format
             )
 
+            // Count boxes that were clipped (changed from original)
+            var removedCount = 0
+            for (i, box) in doubleBoxes.enumerated() {
+                if i < result.count {
+                    let clipped = result[i]
+                    // A box is considered "removed" or significantly clipped if it becomes degenerate
+                    if clipped.count == 4 && box.count == 4 {
+                        let clippedWidth = clipped[2] - clipped[0]
+                        let clippedHeight = clipped[3] - clipped[1]
+                        if clippedWidth <= 0 || clippedHeight <= 0 {
+                            removedCount += 1
+                        }
+                    }
+                }
+            }
+
             let processingTimeMs = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
             resolve([
                 "boxes": result,
+                "format": format,
+                "removedCount": removedCount,
                 "processingTimeMs": processingTimeMs
             ] as NSDictionary)
         } catch {

@@ -145,18 +145,50 @@ object ImageAnalyzerAndroid {
    * Get image metadata
    */
   fun getMetadata(bitmap: Bitmap, fileSize: Int? = null, format: String? = null): WritableMap {
+    val channels = if (bitmap.hasAlpha()) 4 else 3
+    val bitsPerPixel = channels * 8
+    
+    // Get the actual color space name (API 26+), fallback to sRGB
+    val colorSpaceName = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+      normalizeColorSpaceName(bitmap.colorSpace?.name ?: "sRGB")
+    } else {
+      "sRGB" // Pre-Oreo Android uses sRGB
+    }
+    
     return Arguments.createMap().apply {
       putInt("width", bitmap.width)
       putInt("height", bitmap.height)
       putString("format", format ?: "unknown")
-      putInt("channels", if (bitmap.hasAlpha()) 4 else 3)
-      putString("colorSpace", bitmap.config?.name ?: "unknown")
+      putInt("channels", channels)
+      putString("colorSpace", colorSpaceName)
       putDouble("aspectRatio", bitmap.width.toDouble() / bitmap.height.toDouble())
       putBoolean("hasAlpha", bitmap.hasAlpha())
       putInt("bitsPerComponent", 8)
+      putInt("bitsPerPixel", bitsPerPixel)
+      putInt("orientation", 0) // Android doesn't easily expose EXIF orientation from Bitmap
+      putDouble("scale", 1.0) // Android Bitmaps don't have scale concept like iOS
       if (fileSize != null) {
         putInt("fileSize", fileSize)
       }
+    }
+  }
+  
+  /**
+   * Normalize color space names to industry standard simple names
+   */
+  private fun normalizeColorSpaceName(rawName: String): String {
+    return when {
+      rawName.startsWith("sRGB") -> "sRGB"
+      rawName.startsWith("Display P3") -> "Display P3"
+      rawName.startsWith("Adobe RGB") -> "Adobe RGB"
+      rawName.startsWith("ProPhoto RGB") -> "ProPhoto RGB"
+      rawName.startsWith("DCI-P3") -> "DCI-P3"
+      rawName.startsWith("BT.2020") || rawName.contains("BT2020") -> "BT.2020"
+      rawName.startsWith("Linear sRGB") -> "Linear sRGB"
+      rawName.startsWith("Extended sRGB") -> "Extended sRGB"
+      rawName.contains("CMYK") -> "CMYK"
+      rawName.contains("Gray") || rawName.contains("grey") -> "Grayscale"
+      else -> rawName
     }
   }
 

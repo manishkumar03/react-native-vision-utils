@@ -44,6 +44,7 @@ Provides comprehensive tools for pixel data extraction, tensor manipulation, ima
   - [Drawing & Visualization](#drawing--visualization)
 - [Types Reference](#-types-reference)
 - [Error Handling](#-error-handling)
+- [Platform Considerations](#-platform-considerations)
 - [Performance Tips](#-performance-tips)
 - [Contributing](#-contributing)
 - [License](#-license)
@@ -1704,6 +1705,41 @@ try {
 | `DIMENSION_MISMATCH` | Tensor dimension mismatch |
 | `EMPTY_BATCH` | Empty batch provided |
 | `UNKNOWN` | Unknown error |
+
+---
+
+## 🔄 Platform Considerations
+
+> ⚠️ **Cross-Platform Variance**
+
+When processing identical images on iOS and Android, you may observe slight differences in pixel values (typically 5-15%). This is **expected behavior** due to:
+
+| Source | Description |
+|:-------|:------------|
+| 🖼️ **Image Decoders** | iOS uses ImageIO, Android uses Skia - JPEG/PNG decoding differs slightly |
+| 📐 **Resize Algorithms** | Bilinear/bicubic interpolation implementations vary between platforms |
+| 🎨 **Color Space Handling** | sRGB gamma curves may be applied differently |
+| 🔢 **Floating-Point Precision** | Minor rounding differences in native math operations |
+
+**Impact on ML Models:**
+- ✅ Relative comparisons work identically across platforms
+- ✅ Classification/detection results are consistent  
+- ✅ Threshold-based logic (`value > 0`, `value < 1`) works the same
+- ⚠️ Exact numerical equality between platforms is not guaranteed
+
+**Best Practices:**
+```typescript
+// ✅ Good - threshold-based comparison
+const isValid = result.actualMin >= 0 && result.actualMax <= 1;
+
+// ✅ Good - relative comparison
+const isBlurry = blurScore < 100;
+
+// ⚠️ Avoid - exact value comparison across platforms
+const isExact = result.actualMin === 0.0431; // May differ on iOS
+```
+
+This variance is standard across cross-platform ML libraries (TensorFlow Lite, ONNX Runtime, PyTorch Mobile).
 
 ---
 

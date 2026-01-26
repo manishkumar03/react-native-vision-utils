@@ -207,9 +207,13 @@ public class BoundingBoxUtils: NSObject {
         maxDetections: Int,
         format: String
     ) throws -> [String: Any] {
+        let startTime = CFAbsoluteTimeGetCurrent()
+        
         guard boxes.count == scores.count else {
             throw VisionUtilsError.invalidInput("Boxes and scores must have same length")
         }
+
+        let totalBefore = boxes.count
 
         // Convert to xyxy for IoU calculation
         let xyxyBoxes: [[Double]]
@@ -263,11 +267,16 @@ public class BoundingBoxUtils: NSObject {
             }
         }
 
+        let endTime = CFAbsoluteTimeGetCurrent()
+        let processingTimeMs = (endTime - startTime) * 1000
+
         return [
             "indices": keepIndices,
             "detections": keepDetections,
-            "totalBefore": boxes.count,
-            "totalAfter": keepIndices.count
+            "totalBefore": totalBefore,
+            "totalAfter": keepIndices.count,
+            "suppressedCount": totalBefore - keepIndices.count,
+            "processingTimeMs": processingTimeMs
         ]
     }
 }

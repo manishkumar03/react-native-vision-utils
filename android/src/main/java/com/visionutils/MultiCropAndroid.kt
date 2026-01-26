@@ -85,6 +85,8 @@ object MultiCropAndroid {
     options: ReadableMap,
     pixelOptions: ReadableMap
   ): WritableMap {
+    val startTimeNs = System.nanoTime()
+    
     val cropWidth = options.getInt("width")
     val cropHeight = options.getInt("height")
 
@@ -127,18 +129,23 @@ object MultiCropAndroid {
     // Process each crop
     val results = Arguments.createArray()
     val parsedOptions = GetPixelDataOptions.fromMap(pixelOptions)
+    var cropCount = 0
 
     for (crop in crops) {
       val result = PixelProcessor.process(crop, parsedOptions)
       results.pushMap(result.toWritableMap())
       crop.recycle()
+      cropCount++
     }
 
+    val totalTimeMs = (System.nanoTime() - startTimeNs) / 1_000_000.0
+
     return Arguments.createMap().apply {
-      putArray("results", results)
-      putInt("cropCount", 10)
+      putArray("crops", results)
+      putInt("count", cropCount)
       putInt("cropWidth", cropWidth)
       putInt("cropHeight", cropHeight)
+      putDouble("totalTimeMs", totalTimeMs)
     }
   }
 }

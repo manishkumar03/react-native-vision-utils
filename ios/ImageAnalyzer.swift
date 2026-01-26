@@ -9,6 +9,7 @@ class ImageAnalyzer {
     // MARK: - Statistics
 
     /// Calculate image statistics (mean, std, min, max, histogram)
+    /// Returns values normalized to 0-1 range to match Android implementation
     static func getStatistics(from image: UIImage) throws -> [String: Any] {
         guard let cgImage = image.cgImage else {
             throw VisionUtilsError.processingError("Failed to get CGImage")
@@ -22,7 +23,11 @@ class ImageAnalyzer {
         let rgbaData = try extractRGBAPixels(from: cgImage, width: width, height: height)
 
         // Calculate per-channel statistics
-        var channelStats: [[String: Any]] = []
+        var means: [Double] = []
+        var stds: [Double] = []
+        var mins: [Double] = []
+        var maxs: [Double] = []
+        var histograms: [[Int]] = []
 
         for channel in 0..<3 {
             var values = [Float](repeating: 0, count: pixelCount)
@@ -33,31 +38,24 @@ class ImageAnalyzer {
 
             let stats = calculateStats(values)
             let histogram = calculateHistogram(values)
-
-            var channelDict: [String: Any] = stats
-            channelDict["histogram"] = histogram
-            channelStats.append(channelDict)
+            
+            // Normalize to 0-1 range to match Android
+            means.append(Double(stats["mean"] as? Float ?? 0) / 255.0)
+            stds.append(Double(stats["std"] as? Float ?? 0) / 255.0)
+            mins.append(Double(stats["min"] as? Float ?? 0) / 255.0)
+            maxs.append(Double(stats["max"] as? Float ?? 0) / 255.0)
+            histograms.append(histogram)
         }
-
-        // Calculate overall statistics
-        var allValues = [Float](repeating: 0, count: pixelCount * 3)
-        for i in 0..<pixelCount {
-            allValues[i * 3] = Float(rgbaData[i * 4])
-            allValues[i * 3 + 1] = Float(rgbaData[i * 4 + 1])
-            allValues[i * 3 + 2] = Float(rgbaData[i * 4 + 2])
-        }
-
-        let overallStats = calculateStats(allValues)
 
         return [
-            "mean": overallStats["mean"] ?? 0,
-            "std": overallStats["std"] ?? 0,
-            "min": overallStats["min"] ?? 0,
-            "max": overallStats["max"] ?? 0,
-            "perChannel": [
-                "r": channelStats[0],
-                "g": channelStats[1],
-                "b": channelStats[2]
+            "mean": means,
+            "std": stds,
+            "min": mins,
+            "max": maxs,
+            "histogram": [
+                "r": histograms[0],
+                "g": histograms[1],
+                "b": histograms[2]
             ]
         ]
     }
@@ -115,14 +113,18 @@ class ImageAnalyzer {
         var hasAlpha = false
         var bitsPerComponent = 8
         var bitsPerPixel = 32
+        var channels = 3
 
         if let cgImage = image.cgImage {
             if let cs = cgImage.colorSpace {
-                colorSpace = cs.name as String? ?? "unknown"
+                // Normalize color space name to industry standard (strip kCGColorSpace prefix)
+                let rawName = cs.name as String? ?? "unknown"
+                colorSpace = normalizeColorSpaceName(rawName)
             }
             hasAlpha = cgImage.alphaInfo != .none && cgImage.alphaInfo != .noneSkipLast && cgImage.alphaInfo != .noneSkipFirst
             bitsPerComponent = cgImage.bitsPerComponent
             bitsPerPixel = cgImage.bitsPerPixel
+            channels = hasAlpha ? 4 : 3
         }
 
         var result: [String: Any] = [
@@ -134,7 +136,9 @@ class ImageAnalyzer {
             "bitsPerComponent": bitsPerComponent,
             "bitsPerPixel": bitsPerPixel,
             "orientation": image.imageOrientation.rawValue,
-            "scale": image.scale
+            "scale": image.scale,
+            "channels": channels,
+            "aspectRatio": Double(width) / Double(height)
         ]
 
         if let size = fileSize {
@@ -196,11 +200,18 @@ class ImageAnalyzer {
             }
         }
 
+        // Determine channels from image
+        var channels = 4
+        if let alphaInfo = image.cgImage?.alphaInfo {
+            channels = (alphaInfo == .none || alphaInfo == .noneSkipFirst || alphaInfo == .noneSkipLast) ? 3 : 4
+        }
+
         return [
             "isValid": isValid,
             "width": width,
             "height": height,
-            "errors": errors
+            "errors": errors,
+            "channels": channels
         ]
     }
 
@@ -231,5 +242,38 @@ class ImageAnalyzer {
         context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
 
         return pixelData
+    }
+    
+    // MARK: - Helpers
+    
+    /// Normalize Core Graphics color space names to industry standard
+    private static func normalizeColorSpaceName(_ rawName: String) -> String {
+        // Map kCGColorSpace* names to standard names
+        let mappings: [String: String] = [
+            "kCGColorSpaceSRGB": "sRGB",
+            "kCGColorSpaceDisplayP3": "Display P3",
+            "kCGColorSpaceAdobeRGB1998": "Adobe RGB (1998)",
+            "kCGColorSpaceGenericRGB": "Generic RGB",
+            "kCGColorSpaceGenericRGBLinear": "Generic RGB Linear",
+            "kCGColorSpaceDeviceRGB": "Device RGB",
+            "kCGColorSpaceExtendedSRGB": "Extended sRGB",
+            "kCGColorSpaceLinearSRGB": "Linear sRGB",
+            "kCGColorSpaceExtendedLinearSRGB": "Extended Linear sRGB",
+            "kCGColorSpaceGenericGray": "Generic Gray",
+            "kCGColorSpaceDeviceGray": "Device Gray",
+            "kCGColorSpaceGenericCMYK": "Generic CMYK",
+            "kCGColorSpaceDeviceCMYK": "Device CMYK"
+        ]
+        
+        if let mapped = mappings[rawName] {
+            return mapped
+        }
+        
+        // Fallback: strip kCGColorSpace prefix if present
+        if rawName.hasPrefix("kCGColorSpace") {
+            return String(rawName.dropFirst("kCGColorSpace".count))
+        }
+        
+        return rawName
     }
 }
