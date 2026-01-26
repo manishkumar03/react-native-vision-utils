@@ -384,6 +384,14 @@ export interface Spec extends TurboModule {
   detectBlur(source: Object, options: Object): Promise<Object>;
 
   /**
+   * Extract frames from a video file at specific timestamps or intervals
+   * @param source - Video source (file path or URL)
+   * @param options - Extraction options (timestamps, interval, count, resize, etc.)
+   * @returns Promise resolving to extracted frames with metadata
+   */
+  extractVideoFrames(source: Object, options: Object): Promise<Object>;
+
+  /**
    * Clear the pixel data cache
    */
   clearCache(): Promise<void>;

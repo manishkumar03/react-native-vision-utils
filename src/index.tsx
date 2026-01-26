@@ -82,6 +82,10 @@ import {
   // Blur Detection Types
   type DetectBlurOptions,
   type BlurDetectionResult,
+  // Video Frame Extraction Types
+  type VideoSource,
+  type ExtractVideoFramesOptions,
+  type ExtractVideoFramesResult,
 } from './types';
 
 // Re-export all types
@@ -2605,6 +2609,100 @@ export async function detectBlur(
   try {
     const result = await VisionUtils.detectBlur(source, opts);
     return result as BlurDetectionResult;
+  } catch (error) {
+    throw VisionUtilsException.fromNativeError(error);
+  }
+}
+
+// =============================================================================
+// Video Frame Extraction API
+// =============================================================================
+
+/**
+ * Extract frames from a video file at specific timestamps or intervals
+ *
+ * This function provides flexible options for extracting frames:
+ * - Specific timestamps: Extract frames at exact points in the video
+ * - Interval-based: Extract frames at regular intervals (e.g., every 1 second)
+ * - Count-based: Extract N evenly-spaced frames across the video
+ *
+ * Frames can be returned as base64-encoded JPEG images or as raw pixel arrays
+ * suitable for direct use with ML models.
+ *
+ * @param source - Video source (file path or URL)
+ * @param options - Extraction options (timestamps, interval, count, resize, etc.)
+ * @returns Promise resolving to extracted frames with metadata
+ *
+ * @example
+ * // Extract frames at specific timestamps
+ * const result = await extractVideoFrames(
+ *   { type: 'file', value: '/path/to/video.mp4' },
+ *   { timestamps: [0.5, 1.0, 2.5, 5.0] }
+ * );
+ * console.log(`Extracted ${result.frameCount} frames from ${result.videoDuration}s video`);
+ *
+ * @example
+ * // Extract a frame every 1 second
+ * const result = await extractVideoFrames(
+ *   { type: 'file', value: '/path/to/video.mp4' },
+ *   { interval: 1.0, maxFrames: 60 }
+ * );
+ *
+ * @example
+ * // Extract 10 evenly-spaced frames, resized for ML model
+ * const result = await extractVideoFrames(
+ *   { type: 'file', value: '/path/to/video.mp4' },
+ *   {
+ *     count: 10,
+ *     resize: { width: 224, height: 224 },
+ *     outputFormat: 'pixelData',
+ *     normalization: { preset: 'imagenet' }
+ *   }
+ * );
+ * // Each frame in result.frames has .data array ready for inference
+ */
+export async function extractVideoFrames(
+  source: VideoSource,
+  options: ExtractVideoFramesOptions = {}
+): Promise<ExtractVideoFramesResult> {
+  // Validate source
+  if (!source || !source.type || !source.value) {
+    throw new VisionUtilsException(
+      'INVALID_SOURCE',
+      'Video source must have type and value properties'
+    );
+  }
+
+  if (!['file', 'url', 'asset'].includes(source.type)) {
+    throw new VisionUtilsException(
+      'INVALID_SOURCE',
+      `Unsupported video source type: ${source.type}`
+    );
+  }
+
+  // Build options object
+  const opts: Record<string, unknown> = {};
+
+  if (options.timestamps) {
+    opts.timestamps = options.timestamps;
+  } else if (options.interval !== undefined) {
+    opts.interval = options.interval;
+  } else if (options.count !== undefined) {
+    opts.count = options.count;
+  }
+
+  if (options.startTime !== undefined) opts.startTime = options.startTime;
+  if (options.endTime !== undefined) opts.endTime = options.endTime;
+  if (options.maxFrames !== undefined) opts.maxFrames = options.maxFrames;
+  if (options.resize) opts.resize = options.resize;
+  if (options.outputFormat) opts.outputFormat = options.outputFormat;
+  if (options.quality !== undefined) opts.quality = options.quality;
+  if (options.colorFormat) opts.colorFormat = options.colorFormat;
+  if (options.normalization) opts.normalization = options.normalization;
+
+  try {
+    const result = await VisionUtils.extractVideoFrames(source, opts);
+    return result as ExtractVideoFramesResult;
   } catch (error) {
     throw VisionUtilsException.fromNativeError(error);
   }

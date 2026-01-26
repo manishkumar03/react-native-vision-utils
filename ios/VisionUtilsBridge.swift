@@ -1285,4 +1285,36 @@ public class VisionUtilsBridge: NSObject {
             }
         }
     }
+
+    // MARK: - Video Frame Extraction
+
+    @objc
+    public static func extractVideoFrames(
+        _ source: NSDictionary,
+        options: NSDictionary,
+        resolve: @escaping (NSDictionary) -> Void,
+        reject: @escaping (String, String) -> Void
+    ) {
+        Task {
+            do {
+                guard let sourceDict = source as? [String: Any] else {
+                    reject("INVALID_SOURCE", "Invalid source format")
+                    return
+                }
+
+                let optionsDict = options as? [String: Any] ?? [:]
+
+                let result = try await VideoFrameExtractor.extractFrames(
+                    source: sourceDict,
+                    options: optionsDict
+                )
+
+                resolve(result as NSDictionary)
+            } catch let error as VisionUtilsError {
+                reject(error.code, error.message)
+            } catch {
+                reject("VIDEO_EXTRACTION_ERROR", error.localizedDescription)
+            }
+        }
+    }
 }

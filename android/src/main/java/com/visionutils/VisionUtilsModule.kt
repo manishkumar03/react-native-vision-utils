@@ -1491,6 +1491,29 @@ class VisionUtilsModule(reactContext: ReactApplicationContext) :
     }
   }
 
+  /**
+   * Extract frames from a video file at specific timestamps or intervals
+   */
+  override fun extractVideoFrames(source: ReadableMap, options: ReadableMap, promise: Promise) {
+    scope.launch {
+      try {
+        val result = VideoFrameExtractorAndroid.extractFrames(source, options)
+
+        withContext(Dispatchers.Main) {
+          promise.resolve(result)
+        }
+      } catch (e: VisionUtilsException) {
+        withContext(Dispatchers.Main) {
+          promise.reject(e.code, e.message)
+        }
+      } catch (e: Exception) {
+        withContext(Dispatchers.Main) {
+          promise.reject("VIDEO_EXTRACTION_ERROR", e.message ?: "Failed to extract video frames")
+        }
+      }
+    }
+  }
+
   companion object {
     const val NAME = NativeVisionUtilsSpec.NAME
   }

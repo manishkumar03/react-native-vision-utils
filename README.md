@@ -22,6 +22,7 @@ A high-performance React Native library for image preprocessing optimized for ML
 - 📦 **Bounding Box Utilities**: Format conversion (xyxy/xywh/cxcywh), scaling, clipping, IoU, NMS
 - 🖼️ **Letterbox Padding**: YOLO-style letterbox preprocessing with reverse coordinate transform
 - 🎨 **Drawing/Visualization**: Draw boxes, keypoints, masks, and heatmaps for debugging
+- 🎬 **Video Frame Extraction**: Extract frames from videos at timestamps, intervals, or evenly-spaced for temporal ML models
 
 ## Installation
 
@@ -273,6 +274,110 @@ console.log(result.processingTimeMs); // Processing time
 | `score` | number | Laplacian variance score (higher = sharper) |
 | `threshold` | number | The threshold that was used |
 | `processingTimeMs` | number | Processing time in milliseconds |
+
+#### `extractVideoFrames(source, options?)`
+
+Extract frames from video files for video analysis, action recognition, and temporal ML models.
+
+```typescript
+import { extractVideoFrames } from 'react-native-vision-utils';
+
+// Extract 10 evenly-spaced frames
+const result = await extractVideoFrames(
+  { type: 'file', value: '/path/to/video.mp4' },
+  {
+    count: 10, // Extract 10 evenly-spaced frames
+    resize: { width: 224, height: 224 },
+    outputFormat: 'base64', // or 'pixelData' for ML-ready arrays
+  }
+);
+
+console.log(result.frameCount); // Number of frames extracted
+console.log(result.videoDuration); // Video duration in seconds
+console.log(result.videoWidth); // Video width
+console.log(result.videoHeight); // Video height
+console.log(result.frames); // Array of extracted frames
+```
+
+**Extraction Modes:**
+
+```typescript
+// Mode 1: Specific timestamps
+const result = await extractVideoFrames(source, {
+  timestamps: [0.5, 1.0, 2.5, 5.0], // Extract at these exact times
+});
+
+// Mode 2: Regular intervals
+const result = await extractVideoFrames(source, {
+  interval: 1.0, // Extract every 1 second
+  startTime: 5.0, // Start at 5 seconds
+  endTime: 30.0, // End at 30 seconds
+  maxFrames: 25, // Limit to 25 frames
+});
+
+// Mode 3: Count-based (evenly spaced)
+const result = await extractVideoFrames(source, {
+  count: 16, // Extract exactly 16 evenly-spaced frames
+});
+```
+
+**ML-Ready Output:**
+
+```typescript
+// Get pixel arrays ready for inference
+const result = await extractVideoFrames(
+  { type: 'file', value: '/path/to/video.mp4' },
+  {
+    count: 16,
+    resize: { width: 224, height: 224 },
+    outputFormat: 'pixelData',
+    colorFormat: 'rgb',
+    normalization: { preset: 'imagenet' },
+  }
+);
+
+// Each frame has normalized pixel data ready for models
+result.frames.forEach((frame) => {
+  const tensor = frame.data; // Float32 array
+  // Use with your ML model
+});
+```
+
+**Options:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `timestamps` | number[] | Specific timestamps in seconds to extract frames |
+| `interval` | number | Extract frames at regular intervals (seconds) |
+| `count` | number | Number of evenly-spaced frames to extract |
+| `startTime` | number | Start time in seconds (for interval mode) |
+| `endTime` | number | End time in seconds (for interval mode) |
+| `maxFrames` | number | Maximum number of frames to extract |
+| `resize` | object | Resize frames to { width, height } |
+| `outputFormat` | string | 'base64' (default) or 'pixelData' for ML arrays |
+| `quality` | number | JPEG quality for base64 output (0-1) |
+| `colorFormat` | string | Color format for pixelData ('rgb', 'rgba', etc.) |
+| `normalization` | object | Normalization preset for pixelData |
+
+**Result:**
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `frames` | ExtractedFrame[] | Array of extracted frames |
+| `frameCount` | number | Number of frames extracted |
+| `videoDuration` | number | Total video duration in seconds |
+| `videoWidth` | number | Video width in pixels |
+| `videoHeight` | number | Video height in pixels |
+| `processingTimeMs` | number | Processing time in milliseconds |
+
+**ExtractedFrame:**
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `timestamp` | number | Frame timestamp in seconds |
+| `width` | number | Frame width |
+| `height` | number | Frame height |
+| `data` | string \| number[] | Base64 string or pixel array |
 
 ### Image Augmentation
 

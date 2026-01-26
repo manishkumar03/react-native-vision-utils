@@ -42,6 +42,7 @@ import {
   drawKeypoints,
   overlayHeatmap,
   detectBlur,
+  extractVideoFrames,
   type PixelDataResult,
   type ColorFormat,
   type DataLayout,
@@ -1310,6 +1311,51 @@ const App: React.FC = () => {
     }
   }, [currentImage]);
 
+  // Test video frame extraction (uses a sample video URL)
+  const testVideoFrameExtraction = useCallback(async () => {
+    setLoading(true);
+    try {
+      // Use a sample video URL (Big Buck Bunny - public domain)
+      const videoUrl =
+        'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4';
+
+      const result = await extractVideoFrames(
+        { type: 'url', value: videoUrl },
+        {
+          count: 5, // Extract 5 evenly-spaced frames
+          resize: { width: 224, height: 224 },
+          outputFormat: 'base64',
+          quality: 0.7,
+        }
+      );
+
+      // Show first frame as processed image if available
+      if (result.frames.length > 0 && result.frames[0]!.data) {
+        const firstFrame = result.frames[0]!;
+        if (typeof firstFrame.data === 'string') {
+          setProcessedImageUri(`data:image/jpeg;base64,${firstFrame.data}`);
+        }
+      }
+
+      Alert.alert(
+        'Video Frame Extraction',
+        `Extracted ${result.frameCount} frames\n` +
+          `Video Duration: ${result.videoDuration.toFixed(2)}s\n` +
+          `Video Size: ${result.videoWidth}x${result.videoHeight}\n` +
+          `Frame Timestamps: ${result.frames
+            .map((f) => f.timestamp.toFixed(2) + 's')
+            .join(', ')}\n\n` +
+          `Time: ${result.processingTimeMs.toFixed(2)}ms\n\n` +
+          `First frame shown in preview`
+      );
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      Alert.alert('Error', `Video extraction failed: ${errorMessage}`);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const clearResults = useCallback(() => {
     setResults([]);
   }, []);
@@ -1459,6 +1505,18 @@ const App: React.FC = () => {
               disabled={loading}
             >
               <Text style={styles.buttonText}>Detect Blur</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.analysisButton,
+                loading && styles.buttonDisabled,
+              ]}
+              onPress={testVideoFrameExtraction}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>Extract Video Frames</Text>
             </TouchableOpacity>
           </View>
 

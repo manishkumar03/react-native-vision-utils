@@ -1846,3 +1846,142 @@ export interface BlurDetectionResult {
   /** Processing time in milliseconds */
   processingTimeMs: number;
 }
+
+// =============================================================================
+// Video Frame Extraction Types
+// =============================================================================
+
+/**
+ * Video source for frame extraction
+ */
+export interface VideoSource {
+  /** Source type */
+  type: 'file' | 'url' | 'asset';
+  /** File path, URL, or asset reference */
+  value: string;
+}
+
+/**
+ * Output format for extracted video frames
+ */
+export type VideoFrameOutputFormat = 'base64' | 'pixelData';
+
+/**
+ * Options for extracting frames from a video
+ */
+export interface ExtractVideoFramesOptions {
+  /**
+   * Specific timestamps (in seconds) to extract frames at.
+   * Takes priority over interval/count options.
+   * @example [0.5, 1.0, 2.5, 5.0] // Extract at 0.5s, 1s, 2.5s, 5s
+   */
+  timestamps?: number[];
+
+  /**
+   * Extract frames at regular intervals (in seconds).
+   * Used when timestamps is not provided.
+   * @example 1.0 // Extract a frame every 1 second
+   */
+  interval?: number;
+
+  /**
+   * Extract this many evenly-spaced frames.
+   * Used when neither timestamps nor interval is provided.
+   * @example 10 // Extract 10 evenly spaced frames
+   */
+  count?: number;
+
+  /**
+   * Start time in seconds for interval/count extraction.
+   * @default 0
+   */
+  startTime?: number;
+
+  /**
+   * End time in seconds for interval/count extraction.
+   * @default video duration
+   */
+  endTime?: number;
+
+  /**
+   * Maximum number of frames to extract (safety limit for interval mode).
+   * @default 100
+   */
+  maxFrames?: number;
+
+  /**
+   * Resize options for extracted frames.
+   * If not specified, frames are returned at original video resolution.
+   */
+  resize?: {
+    width: number;
+    height: number;
+  };
+
+  /**
+   * Output format for frame data.
+   * - 'base64': JPEG encoded as base64 string (default)
+   * - 'pixelData': Raw pixel values as float array
+   * @default 'base64'
+   */
+  outputFormat?: VideoFrameOutputFormat;
+
+  /**
+   * JPEG quality for base64 output (1-100).
+   * @default 90
+   */
+  quality?: number;
+
+  /**
+   * Color format for pixelData output.
+   * @default 'rgb'
+   */
+  colorFormat?: ColorFormat;
+
+  /**
+   * Normalization for pixelData output.
+   */
+  normalization?: Normalization;
+}
+
+/**
+ * Single extracted frame data
+ */
+export interface ExtractedFrame {
+  /** Actual timestamp the frame was extracted from (may differ slightly from requested) */
+  timestamp: number;
+  /** The timestamp that was requested */
+  requestedTimestamp: number;
+  /** Frame width in pixels */
+  width: number;
+  /** Frame height in pixels */
+  height: number;
+  /** Base64 encoded JPEG (when outputFormat is 'base64') */
+  base64?: string;
+  /** Pixel data array (when outputFormat is 'pixelData') */
+  data?: number[];
+  /** Number of channels (when outputFormat is 'pixelData') */
+  channels?: number;
+  /** Error message if frame extraction failed */
+  error?: string;
+}
+
+/**
+ * Result of video frame extraction
+ */
+export interface ExtractVideoFramesResult {
+  /** Array of extracted frames */
+  frames: ExtractedFrame[];
+  /** Number of frames extracted */
+  frameCount: number;
+  /** Video duration in seconds */
+  videoDuration: number;
+  /** Original video width */
+  videoWidth: number;
+  /** Original video height */
+  videoHeight: number;
+  /** Video frame rate */
+  frameRate: number;
+  /** Processing time in milliseconds */
+  processingTimeMs: number;
+}
