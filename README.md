@@ -364,6 +364,8 @@ result.frames.forEach((frame) => {
 
 > **Platform Note:** The `asset` source type is only supported on iOS. Android supports `file` and `url` sources.
 
+> **PixelData Note:** `colorFormat` and `normalization` are applied only when `outputFormat === 'pixelData'`.
+
 **Result:**
 
 | Property | Type | Description |
