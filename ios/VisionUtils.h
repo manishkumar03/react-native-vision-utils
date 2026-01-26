@@ -106,4 +106,42 @@
 - (void)getCacheStats:(RCTPromiseResolveBlock)resolve
                reject:(RCTPromiseRejectBlock)reject;
 
+// Label Database
+- (void)getLabel:(double)index
+         dataset:(NSString *)dataset
+ includeMetadata:(BOOL)includeMetadata
+         resolve:(RCTPromiseResolveBlock)resolve
+          reject:(RCTPromiseRejectBlock)reject;
+
+- (void)getTopLabels:(NSArray *)scores
+             options:(NSDictionary *)options
+             resolve:(RCTPromiseResolveBlock)resolve
+              reject:(RCTPromiseRejectBlock)reject;
+
+- (void)getAllLabels:(NSString *)dataset
+             resolve:(RCTPromiseResolveBlock)resolve
+              reject:(RCTPromiseRejectBlock)reject;
+
+- (void)getDatasetInfo:(NSString *)dataset
+               resolve:(RCTPromiseResolveBlock)resolve
+                reject:(RCTPromiseRejectBlock)reject;
+
+- (void)getAvailableDatasets:(RCTPromiseResolveBlock)resolve
+                      reject:(RCTPromiseRejectBlock)reject;
+
+// Camera Frame Processing
+- (void)processCameraFrame:(NSDictionary *)source
+                   options:(NSDictionary *)options
+                   resolve:(RCTPromiseResolveBlock)resolve
+                    reject:(RCTPromiseRejectBlock)reject;
+
+- (void)convertYUVToRGB:(NSString *)yBuffer
+                uBuffer:(NSString *)uBuffer
+                vBuffer:(NSString *)vBuffer
+                  width:(double)width
+                 height:(double)height
+            pixelFormat:(NSString *)pixelFormat
+                resolve:(RCTPromiseResolveBlock)resolve
+                 reject:(RCTPromiseRejectBlock)reject;
+
 @end

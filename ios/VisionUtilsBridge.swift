@@ -605,15 +605,12 @@ public class VisionUtilsBridge: NSObject {
     @objc
     public static func getLabel(
         _ index: Int,
-        options: NSDictionary,
+        dataset: String,
+        includeMetadata: Bool,
         resolve: @escaping (Any) -> Void,
         reject: @escaping (String, String) -> Void
     ) {
         do {
-            let optionsDict = options as? [String: Any] ?? [:]
-            let dataset = optionsDict["dataset"] as? String ?? "coco"
-            let includeMetadata = optionsDict["includeMetadata"] as? Bool ?? false
-
             let result = try LabelDatabase.shared.getLabel(
                 index: index,
                 dataset: dataset,
@@ -741,13 +738,25 @@ public class VisionUtilsBridge: NSObject {
 
     @objc
     public static func convertYUVToRGB(
-        _ options: NSDictionary,
+        _ yBuffer: String,
+        uBuffer: String,
+        vBuffer: String,
+        width: Int,
+        height: Int,
+        pixelFormat: String,
         resolve: @escaping (NSDictionary) -> Void,
         reject: @escaping (String, String) -> Void
     ) {
         do {
-            let optionsDict = options as? [String: Any] ?? [:]
-            let result = try CameraFrameProcessor.shared.convertYUVToRGB(options: optionsDict)
+            let options: [String: Any] = [
+                "yPlaneBase64": yBuffer,
+                "uPlaneBase64": uBuffer,
+                "vPlaneBase64": vBuffer,
+                "width": width,
+                "height": height,
+                "pixelFormat": pixelFormat
+            ]
+            let result = try CameraFrameProcessor.shared.convertYUVToRGB(options: options)
             resolve(result as NSDictionary)
         } catch {
             reject("YUV_CONVERT_ERROR", error.localizedDescription)

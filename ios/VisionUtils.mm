@@ -265,11 +265,13 @@
 // MARK: - Label Database
 
 - (void)getLabel:(double)index
-         options:(NSDictionary *)options
+         dataset:(NSString *)dataset
+ includeMetadata:(BOOL)includeMetadata
          resolve:(RCTPromiseResolveBlock)resolve
           reject:(RCTPromiseRejectBlock)reject {
     [VisionUtilsBridge getLabel:(NSInteger)index
-                        options:options
+                        dataset:dataset
+                includeMetadata:includeMetadata
                         resolve:^(id result) {
         resolve(result);
     } reject:^(NSString *code, NSString *message) {
@@ -336,10 +338,20 @@
     }];
 }
 
-- (void)convertYUVToRGB:(NSDictionary *)options
+- (void)convertYUVToRGB:(NSString *)yBuffer
+                uBuffer:(NSString *)uBuffer
+                vBuffer:(NSString *)vBuffer
+                  width:(double)width
+                 height:(double)height
+            pixelFormat:(NSString *)pixelFormat
                 resolve:(RCTPromiseResolveBlock)resolve
                  reject:(RCTPromiseRejectBlock)reject {
-    [VisionUtilsBridge convertYUVToRGB:options
+    [VisionUtilsBridge convertYUVToRGB:yBuffer
+                               uBuffer:uBuffer
+                               vBuffer:vBuffer
+                                 width:(NSInteger)width
+                                height:(NSInteger)height
+                           pixelFormat:pixelFormat
                                resolve:^(NSDictionary *result) {
         resolve(result);
     } reject:^(NSString *code, NSString *message) {
