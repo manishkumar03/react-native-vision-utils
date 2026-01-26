@@ -117,10 +117,10 @@ object PixelProcessor {
                 resizeCover(bitmap, targetWidth, targetHeight)
             }
             ResizeStrategy.CONTAIN -> {
-                resizeContain(bitmap, targetWidth, targetHeight)
+                resizeContain(bitmap, targetWidth, targetHeight, resize.padColor)
             }
             ResizeStrategy.LETTERBOX -> {
-                resizeLetterbox(bitmap, targetWidth, targetHeight)
+                resizeLetterbox(bitmap, targetWidth, targetHeight, resize.letterboxColor)
             }
         }
     }
@@ -151,7 +151,7 @@ object PixelProcessor {
     /**
      * Resize with contain strategy (fit within target, letterbox)
      */
-    private fun resizeContain(bitmap: Bitmap, targetWidth: Int, targetHeight: Int): Bitmap {
+    private fun resizeContain(bitmap: Bitmap, targetWidth: Int, targetHeight: Int, padColor: IntArray): Bitmap {
         val sourceWidth = bitmap.width.toFloat()
         val sourceHeight = bitmap.height.toFloat()
 
@@ -164,10 +164,13 @@ object PixelProcessor {
 
         val scaledBitmap = Bitmap.createScaledBitmap(bitmap, scaledWidth, scaledHeight, true)
 
-        // Create target bitmap with letterboxing (black background)
+        // Create target bitmap with padding color
         val result = Bitmap.createBitmap(targetWidth, targetHeight, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(result)
-        canvas.drawColor(Color.BLACK)
+        val r = padColor.getOrElse(0) { 0 }
+        val g = padColor.getOrElse(1) { 0 }
+        val b = padColor.getOrElse(2) { 0 }
+        canvas.drawColor(Color.rgb(r, g, b))
 
         // Center the scaled bitmap
         val x = (targetWidth - scaledWidth) / 2
@@ -181,7 +184,7 @@ object PixelProcessor {
      * Resize with letterbox strategy (same as contain but with explicit padding)
      * Similar to YOLO preprocessing - maintains aspect ratio with padding
      */
-    private fun resizeLetterbox(bitmap: Bitmap, targetWidth: Int, targetHeight: Int): Bitmap {
+    private fun resizeLetterbox(bitmap: Bitmap, targetWidth: Int, targetHeight: Int, letterboxColor: IntArray): Bitmap {
         val sourceWidth = bitmap.width.toFloat()
         val sourceHeight = bitmap.height.toFloat()
 
@@ -194,10 +197,13 @@ object PixelProcessor {
 
         val scaledBitmap = Bitmap.createScaledBitmap(bitmap, scaledWidth, scaledHeight, true)
 
-        // Create target bitmap with letterboxing (gray background for YOLO-style)
+        // Create target bitmap with letterbox padding color
         val result = Bitmap.createBitmap(targetWidth, targetHeight, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(result)
-        canvas.drawColor(Color.rgb(114, 114, 114)) // YOLO-style gray padding
+        val r = letterboxColor.getOrElse(0) { 114 }
+        val g = letterboxColor.getOrElse(1) { 114 }
+        val b = letterboxColor.getOrElse(2) { 114 }
+        canvas.drawColor(Color.rgb(r, g, b)) // Default YOLO-style gray padding
 
         // Center the scaled bitmap
         val x = (targetWidth - scaledWidth) / 2

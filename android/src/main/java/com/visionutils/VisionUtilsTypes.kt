@@ -116,7 +116,9 @@ enum class ResizeStrategy {
 data class ResizeOptions(
     val width: Int,
     val height: Int,
-    val strategy: ResizeStrategy = ResizeStrategy.COVER
+    val strategy: ResizeStrategy = ResizeStrategy.COVER,
+    val padColor: IntArray = intArrayOf(0, 0, 0, 255),
+    val letterboxColor: IntArray = intArrayOf(114, 114, 114)
 ) {
     companion object {
         fun fromMap(map: ReadableMap?): ResizeOptions? {
@@ -128,8 +130,38 @@ data class ResizeOptions(
             } else {
                 ResizeStrategy.COVER
             }
-            return ResizeOptions(width, height, strategy)
+            val padColor = if (map.hasKey("padColor")) {
+                map.getArray("padColor")?.toIntArray() ?: intArrayOf(0, 0, 0, 255)
+            } else {
+                intArrayOf(0, 0, 0, 255)
+            }
+            val letterboxColor = if (map.hasKey("letterboxColor")) {
+                map.getArray("letterboxColor")?.toIntArray() ?: intArrayOf(114, 114, 114)
+            } else {
+                intArrayOf(114, 114, 114)
+            }
+            return ResizeOptions(width, height, strategy, padColor, letterboxColor)
         }
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+        other as ResizeOptions
+        return width == other.width &&
+               height == other.height &&
+               strategy == other.strategy &&
+               padColor.contentEquals(other.padColor) &&
+               letterboxColor.contentEquals(other.letterboxColor)
+    }
+
+    override fun hashCode(): Int {
+        var result = width
+        result = 31 * result + height
+        result = 31 * result + strategy.hashCode()
+        result = 31 * result + padColor.contentHashCode()
+        result = 31 * result + letterboxColor.contentHashCode()
+        return result
     }
 }
 
@@ -428,6 +460,14 @@ fun ReadableArray.toFloatArray(): FloatArray {
     val result = FloatArray(size())
     for (i in 0 until size()) {
         result[i] = getDouble(i).toFloat()
+    }
+    return result
+}
+
+fun ReadableArray.toIntArray(): IntArray {
+    val result = IntArray(size())
+    for (i in 0 until size()) {
+        result[i] = getInt(i)
     }
     return result
 }

@@ -71,14 +71,15 @@ const mobileNetResult = await getPixelData({
 | Preset            | Size      | Resize    | Normalization | Layout |
 | ----------------- | --------- | --------- | ------------- | ------ |
 | `yolo` / `yolov8` | 640×640   | letterbox | scale         | NCHW   |
-| `mobilenet`       | 224×224   | cover     | ImageNet      | NCHW   |
-| `efficientnet_b0` | 224×224   | cover     | ImageNet      | NCHW   |
-| `efficientnet_b7` | 600×600   | cover     | ImageNet      | NCHW   |
+| `mobilenet`       | 224×224   | cover     | ImageNet      | NHWC   |
+| `mobilenet_v2`    | 224×224   | cover     | ImageNet      | NHWC   |
+| `mobilenet_v3`    | 224×224   | cover     | ImageNet      | NHWC   |
+| `efficientnet`    | 224×224   | cover     | ImageNet      | NHWC   |
 | `resnet`          | 224×224   | cover     | ImageNet      | NCHW   |
+| `resnet50`        | 224×224   | cover     | ImageNet      | NCHW   |
 | `vit`             | 224×224   | cover     | ImageNet      | NCHW   |
-| `vit_large`       | 384×384   | cover     | ImageNet      | NCHW   |
 | `clip`            | 224×224   | cover     | CLIP-specific | NCHW   |
-| `sam`             | 1024×1024 | letterbox | scale         | NCHW   |
+| `sam`             | 1024×1024 | contain   | ImageNet      | NCHW   |
 | `dino`            | 224×224   | cover     | ImageNet      | NCHW   |
 | `detr`            | 800×800   | contain   | ImageNet      | NCHW   |
 
@@ -113,6 +114,8 @@ const result = await getPixelData({
 | `dataLayout`    | `DataLayout`    | `'hwc'`               | Data layout format            |
 | `outputFormat`  | `OutputFormat`  | `'array'`             | Output format                 |
 
+> **Note**: The TypeScript types also include experimental options (`centerCrop`, `augmentation`, `edgeDetection`, `padding`, `preprocessing`, `filters`, `memoryLayout`, `quantization`, `acceleration`, `outputTarget`) that are defined for future use but not yet implemented in native code. These options are silently ignored. Use `applyAugmentations()` for image augmentation.
+
 ##### Result
 
 ```typescript
@@ -121,6 +124,7 @@ interface PixelDataResult {
   width: number;
   height: number;
   channels: number;
+  colorFormat: ColorFormat;
   dataLayout: DataLayout;
   shape: number[];
   processingTimeMs: number;
@@ -487,14 +491,16 @@ type ColorFormat =
 ```typescript
 type ResizeStrategy =
   | 'cover' // Fill target, crop excess (default)
-  | 'contain' // Fit within target, black letterbox
+  | 'contain' // Fit within target, padColor padding
   | 'stretch' // Stretch to fill (may distort)
-  | 'letterbox'; // Fit within target, gray padding (YOLO-style)
+  | 'letterbox'; // Fit within target, letterboxColor padding (YOLO-style)
 
 interface ResizeOptions {
   width: number;
   height: number;
   strategy?: ResizeStrategy;
+  padColor?: [number, number, number, number]; // RGBA for 'contain' (default: black)
+  letterboxColor?: [number, number, number]; // RGB for 'letterbox' (default: [114, 114, 114])
 }
 ```
 
