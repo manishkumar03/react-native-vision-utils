@@ -2,14 +2,41 @@ import AVFoundation
 import UIKit
 import Accelerate
 
-/// Extracts frames from video files at specific timestamps or intervals
+/// Extracts frames from video files at specific timestamps or intervals.
+///
+/// Supports three extraction modes:
+/// - `timestamps`: Array of specific timestamps in seconds
+/// - `interval`: Extract every N seconds (with optional startTime/endTime/maxFrames)
+/// - `count`: Extract N evenly-spaced frames
+///
+/// If no mode is specified, extracts a single frame at t=0.
+///
+/// **Supported source types:** `file`, `url`, `asset`
+///
+/// **Output formats:**
+/// - `base64` (default): JPEG encoded, quality 0-100 (default 90)
+/// - `pixelData`: Raw pixel arrays with optional colorFormat/normalization
+///
+/// **Note:** `colorFormat` and `normalization` only apply when `outputFormat === "pixelData"`.
+///
+/// Per-frame extraction errors are captured in the frame's `error` field; extraction continues for remaining frames.
 class VideoFrameExtractor {
 
     /// Extract frames from a video file
     /// - Parameters:
-    ///   - source: Video source (file path or URL)
-    ///   - options: Extraction options (timestamps, interval, resize, etc.)
-    /// - Returns: Dictionary with extracted frames and metadata
+    ///   - source: Video source with `type` (file/url/asset) and `value` (path or URL string)
+    ///   - options: Extraction options:
+    ///     - `timestamps`: [Double] - specific timestamps in seconds
+    ///     - `interval`: Double - extract every N seconds
+    ///     - `count`: Int - number of evenly-spaced frames
+    ///     - `startTime`/`endTime`: Double - range for interval/count modes
+    ///     - `maxFrames`: Int - limit for interval mode (default 100)
+    ///     - `resize`: {width: Int, height: Int} - resize frames
+    ///     - `outputFormat`: "base64" (default) or "pixelData"
+    ///     - `quality`: Int 0-100 (default 90) - JPEG quality for base64
+    ///     - `colorFormat`: String - for pixelData (rgb/rgba/bgr/grayscale)
+    ///     - `normalization`: {preset: String} - for pixelData (scale/imagenet/tensorflow)
+    /// - Returns: Dictionary with `frames`, `frameCount`, `videoDuration`, `videoWidth`, `videoHeight`, `frameRate`, `processingTimeMs`
     static func extractFrames(source: [String: Any], options: [String: Any]) async throws -> [String: Any] {
         let startTime = CFAbsoluteTimeGetCurrent()
 

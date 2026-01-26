@@ -2629,7 +2629,21 @@ export async function detectBlur(
  * Frames can be returned as base64-encoded JPEG images or as raw pixel arrays
  * suitable for direct use with ML models.
  *
- * @param source - Video source (file path or URL)
+ * **Defaults:**
+ * - If no mode specified (timestamps/interval/count), extracts single frame at t=0
+ * - outputFormat: 'base64'
+ * - quality: 90 (0-100 for JPEG compression)
+ * - colorFormat/normalization: Only applied when outputFormat === 'pixelData'
+ *
+ * **Platform Notes:**
+ * - iOS: Supports 'file', 'url', and 'asset' source types
+ * - Android: Only supports 'file' and 'url' (asset not supported)
+ *
+ * **Error Handling:**
+ * - Per-frame errors are captured in frame.error field (extraction continues)
+ * - Result includes requestedTimestamp vs actual timestamp for each frame
+ *
+ * @param source - Video source (file path or URL). Note: 'asset' type is iOS-only.
  * @param options - Extraction options (timestamps, interval, count, resize, etc.)
  * @returns Promise resolving to extracted frames with metadata
  *
