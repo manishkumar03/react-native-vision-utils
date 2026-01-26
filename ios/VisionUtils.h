@@ -84,10 +84,10 @@
                     reject:(RCTPromiseRejectBlock)reject;
 
 // Cache management
-- (void)clearCacheWithResolve:(RCTPromiseResolveBlock)resolve
-                       reject:(RCTPromiseRejectBlock)reject;
+- (void)clearCache:(RCTPromiseResolveBlock)resolve
+            reject:(RCTPromiseRejectBlock)reject;
 
-- (void)getCacheStatsWithResolve:(RCTPromiseResolveBlock)resolve
-                          reject:(RCTPromiseRejectBlock)reject;
+- (void)getCacheStats:(RCTPromiseResolveBlock)resolve
+               reject:(RCTPromiseRejectBlock)reject;
 
 @end

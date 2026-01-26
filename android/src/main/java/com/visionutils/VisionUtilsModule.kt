@@ -263,6 +263,13 @@ class VisionUtilsModule(reactContext: ReactApplicationContext) :
   ) {
     scope.launch {
       try {
+        // Debug logging
+        android.util.Log.d("VisionUtils", "fiveCrop source: ${source.toHashMap()}")
+        android.util.Log.d("VisionUtils", "fiveCrop source has type: ${source.hasKey("type")}")
+        if (source.hasKey("type")) {
+          android.util.Log.d("VisionUtils", "fiveCrop source type value: ${source.getString("type")}")
+        }
+
         val context = reactApplicationContext.applicationContext
         val imageSource = ImageSource.fromMap(source)
         val bitmap = ImageLoader.loadImage(context, imageSource)

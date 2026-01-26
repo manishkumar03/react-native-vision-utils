@@ -12,6 +12,7 @@ class ImageAugmenter {
         to image: UIImage,
         augmentations: [String: Any]
     ) throws -> [String: Any] {
+        let startTime = CFAbsoluteTimeGetCurrent()
         var currentImage = image
 
         // Apply rotation
@@ -55,11 +56,13 @@ class ImageAugmenter {
         }
 
         let base64String = pngData.base64EncodedString()
+        let processingTimeMs = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
 
         return [
-            "base64": "data:image/png;base64,\(base64String)",
+            "base64": base64String,
             "width": Int(currentImage.size.width * currentImage.scale),
-            "height": Int(currentImage.size.height * currentImage.scale)
+            "height": Int(currentImage.size.height * currentImage.scale),
+            "processingTimeMs": processingTimeMs
         ]
     }
 

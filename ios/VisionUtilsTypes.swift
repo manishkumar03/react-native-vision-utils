@@ -12,6 +12,7 @@ enum ImageSourceType: String {
     case base64
     case asset
     case photoLibrary
+    case cgImage  // Internal use only for cropped images
 }
 
 /// Color format options
@@ -188,7 +189,7 @@ struct Normalization {
 
 /// Complete options for getPixelData
 struct GetPixelDataOptions {
-    let source: ImageSource
+    let source: ImageSource?
     let colorFormat: ColorFormat
     let normalization: Normalization
     let resize: ResizeOptions?
@@ -201,6 +202,43 @@ struct GetPixelDataOptions {
         }
 
         self.source = try ImageSource(from: sourceDict)
+
+        if let colorFormatStr = dict["colorFormat"] as? String,
+           let colorFormat = ColorFormat(rawValue: colorFormatStr) {
+            self.colorFormat = colorFormat
+        } else {
+            self.colorFormat = .rgb
+        }
+
+        if let normDict = dict["normalization"] as? [String: Any] {
+            self.normalization = try Normalization(from: normDict)
+        } else {
+            self.normalization = Normalization.default
+        }
+
+        if let resizeDict = dict["resize"] as? [String: Any] {
+            self.resize = try ResizeOptions(from: resizeDict)
+        } else {
+            self.resize = nil
+        }
+
+        if let roiDict = dict["roi"] as? [String: Any] {
+            self.roi = try Roi(from: roiDict)
+        } else {
+            self.roi = nil
+        }
+
+        if let layoutStr = dict["dataLayout"] as? String,
+           let layout = DataLayout(rawValue: layoutStr.lowercased()) {
+            self.layout = layout
+        } else {
+            self.layout = .hwc
+        }
+    }
+
+    /// Initialize from options dictionary without requiring source (used when image is already loaded)
+    init(fromPixelOptions dict: [String: Any]) throws {
+        self.source = nil  // Source not needed when image already loaded
 
         if let colorFormatStr = dict["colorFormat"] as? String,
            let colorFormat = ColorFormat(rawValue: colorFormatStr) {

@@ -203,8 +203,8 @@
 
 // MARK: - Cache Management
 
-- (void)clearCacheWithResolve:(RCTPromiseResolveBlock)resolve
-                       reject:(RCTPromiseRejectBlock)reject {
+- (void)clearCache:(RCTPromiseResolveBlock)resolve
+            reject:(RCTPromiseRejectBlock)reject {
     [VisionUtilsBridge clearCacheWithResolve:^{
         resolve(nil);
     } reject:^(NSString *code, NSString *message) {
@@ -212,8 +212,8 @@
     }];
 }
 
-- (void)getCacheStatsWithResolve:(RCTPromiseResolveBlock)resolve
-                          reject:(RCTPromiseRejectBlock)reject {
+- (void)getCacheStats:(RCTPromiseResolveBlock)resolve
+               reject:(RCTPromiseRejectBlock)reject {
     [VisionUtilsBridge getCacheStatsWithResolve:^(NSDictionary *result) {
         resolve(result);
     } reject:^(NSString *code, NSString *message) {

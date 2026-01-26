@@ -307,11 +307,18 @@ const App: React.FC = () => {
         type: 'url',
         value: currentImage,
       });
+      // Handle different response formats - native returns width/height at top level
+      const width =
+        validation.metadata?.width ??
+        (validation as unknown as { width: number }).width;
+      const height =
+        validation.metadata?.height ??
+        (validation as unknown as { height: number }).height;
       Alert.alert(
         'Image Validation',
         `Valid: ${validation.isValid}\nErrors: ${
           validation.errors.length > 0 ? validation.errors.join(', ') : 'None'
-        }\nSize: ${validation.metadata.width}x${validation.metadata.height}`
+        }\nSize: ${width}x${height}`
       );
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
@@ -357,7 +364,7 @@ const App: React.FC = () => {
         {
           horizontalFlip: true,
           rotation: 15,
-          brightness: 1.2,
+          brightness: 0.2,
           contrast: 1.1,
           saturation: 1.3,
         }

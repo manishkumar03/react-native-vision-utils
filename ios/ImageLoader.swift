@@ -20,6 +20,9 @@ class ImageLoader {
             return try loadFromAsset(source.value)
         case .photoLibrary:
             return try await loadFromPhotoLibrary(source.value)
+        case .cgImage:
+            // cgImage type is for internal use only - should not be used with ImageLoader
+            throw VisionUtilsError.invalidSource("cgImage source type cannot be loaded via ImageLoader")
         }
     }
 

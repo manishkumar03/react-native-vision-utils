@@ -28,7 +28,11 @@ public class VisionUtilsBridge: NSObject {
                 }
 
                 let parsedOptions = try GetPixelDataOptions(from: optionsDict)
-                let image = try await ImageLoader.loadImage(from: parsedOptions.source)
+                guard let source = parsedOptions.source else {
+                    reject("INVALID_SOURCE", "Source is required")
+                    return
+                }
+                let image = try await ImageLoader.loadImage(from: source)
                 let result = try PixelProcessor.process(image: image, options: parsedOptions)
 
                 resolve(result.toDictionary() as NSDictionary)
@@ -80,7 +84,10 @@ public class VisionUtilsBridge: NSObject {
                     group.addTask {
                         do {
                             let parsedOptions = try GetPixelDataOptions(from: optionsDict)
-                            let image = try await ImageLoader.loadImage(from: parsedOptions.source)
+                            guard let source = parsedOptions.source else {
+                                throw VisionUtilsError.invalidSource("Source is required")
+                            }
+                            let image = try await ImageLoader.loadImage(from: source)
                             let result = try PixelProcessor.process(image: image, options: parsedOptions)
                             return (currentIndex, result.toDictionary())
                         } catch let error as VisionUtilsError {

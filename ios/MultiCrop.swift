@@ -129,12 +129,9 @@ class MultiCrop {
                 finalImage = try flipImageHorizontally(croppedCGImage)
             }
 
-            // Create pixel options with cropped image
-            var cropPixelOptions = pixelOptions
-            cropPixelOptions["source"] = ["type": "cgImage"]  // Will be overridden
-
+            // Process the cropped image with pixel options (no source needed - image already loaded)
             let uiImage = UIImage(cgImage: finalImage)
-            let parsedOptions = try GetPixelDataOptions(from: cropPixelOptions)
+            let parsedOptions = try GetPixelDataOptions(fromPixelOptions: pixelOptions)
             let result = try PixelProcessor.process(image: uiImage, options: parsedOptions)
 
             var resultDict = result.toDictionary()

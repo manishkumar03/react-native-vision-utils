@@ -5,6 +5,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import kotlin.math.min
 import kotlin.math.max
+import kotlin.math.pow
 import kotlin.math.roundToInt
 
 /**
@@ -376,9 +377,9 @@ object PixelProcessor {
         var bf = b / 255f
 
         // Apply gamma correction
-        rf = if (rf > 0.04045f) kotlin.math.pow((rf + 0.055f) / 1.055f, 2.4f).toFloat() else rf / 12.92f
-        gf = if (gf > 0.04045f) kotlin.math.pow((gf + 0.055f) / 1.055f, 2.4f).toFloat() else gf / 12.92f
-        bf = if (bf > 0.04045f) kotlin.math.pow((bf + 0.055f) / 1.055f, 2.4f).toFloat() else bf / 12.92f
+        rf = if (rf > 0.04045f) ((rf + 0.055f) / 1.055f).toDouble().pow(2.4).toFloat() else rf / 12.92f
+        gf = if (gf > 0.04045f) ((gf + 0.055f) / 1.055f).toDouble().pow(2.4).toFloat() else gf / 12.92f
+        bf = if (bf > 0.04045f) ((bf + 0.055f) / 1.055f).toDouble().pow(2.4).toFloat() else bf / 12.92f
 
         // Convert to XYZ using D65 illuminant
         var x = (rf * 0.4124564f + gf * 0.3575761f + bf * 0.1804375f) / 0.95047f
@@ -386,9 +387,9 @@ object PixelProcessor {
         var z = (rf * 0.0193339f + gf * 0.1191920f + bf * 0.9503041f) / 1.08883f
 
         // Convert to LAB
-        x = if (x > 0.008856f) kotlin.math.pow(x.toDouble(), 1.0/3.0).toFloat() else (7.787f * x) + (16f / 116f)
-        y = if (y > 0.008856f) kotlin.math.pow(y.toDouble(), 1.0/3.0).toFloat() else (7.787f * y) + (16f / 116f)
-        z = if (z > 0.008856f) kotlin.math.pow(z.toDouble(), 1.0/3.0).toFloat() else (7.787f * z) + (16f / 116f)
+        x = if (x > 0.008856f) x.toDouble().pow(1.0/3.0).toFloat() else (7.787f * x) + (16f / 116f)
+        y = if (y > 0.008856f) y.toDouble().pow(1.0/3.0).toFloat() else (7.787f * y) + (16f / 116f)
+        z = if (z > 0.008856f) z.toDouble().pow(1.0/3.0).toFloat() else (7.787f * z) + (16f / 116f)
 
         val lVal = (116f * y) - 16f
         val aVal = 500f * (x - y)
