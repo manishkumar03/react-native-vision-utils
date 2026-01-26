@@ -5,6 +5,7 @@
  * with support for various color formats, normalizations, and data layouts.
  */
 
+import { Platform } from 'react-native';
 import VisionUtils from './NativeVisionUtils';
 import {
   VisionUtilsException,
@@ -2691,6 +2692,14 @@ export async function extractVideoFrames(
     throw new VisionUtilsException(
       'INVALID_SOURCE',
       `Unsupported video source type: ${source.type}`
+    );
+  }
+
+  // Check for Android + asset (not supported)
+  if (source.type === 'asset' && Platform.OS === 'android') {
+    throw new VisionUtilsException(
+      'UNSUPPORTED_PLATFORM',
+      "Video source type 'asset' is not supported on Android. Use 'file' or 'url' instead."
     );
   }
 
