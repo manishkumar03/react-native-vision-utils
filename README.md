@@ -14,6 +14,7 @@ A high-performance React Native library for image preprocessing optimized for ML
 - 🖼️ **Multiple Sources**: URL, file, base64, assets, photo library
 - 🤖 **Model Presets**: Pre-configured settings for YOLO, MobileNet, EfficientNet, ResNet, ViT, CLIP, SAM, DINO, DETR
 - 🔄 **Image Augmentation**: Rotation, flip, brightness, contrast, saturation, blur
+- 🎨 **Color Jitter**: Granular brightness/contrast/saturation/hue control with range support and seeded randomness
 - 📈 **Image Analysis**: Statistics, metadata, validation, blur detection
 - 🧮 **Tensor Operations**: Channel extraction, patch extraction, permutation, batch concatenation
 - 🔙 **Tensor to Image**: Convert processed tensors back to images
