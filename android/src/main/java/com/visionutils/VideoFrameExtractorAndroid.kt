@@ -98,6 +98,7 @@ object VideoFrameExtractorAndroid {
 
             // Extract frames
             val frames = WritableNativeArray()
+            var frameCount = 0
 
             for (timestamp in timestamps) {
                 val frameData = WritableNativeMap()
@@ -147,12 +148,13 @@ object VideoFrameExtractorAndroid {
                 }
 
                 frames.pushMap(frameData)
+                frameCount++
             }
 
             val processingTime = System.currentTimeMillis() - startTime
 
             result.putArray("frames", frames)
-            result.putInt("frameCount", frames.size())
+            result.putInt("frameCount", frameCount)
             result.putDouble("videoDuration", durationSeconds)
             result.putInt("videoWidth", videoWidth)
             result.putInt("videoHeight", videoHeight)

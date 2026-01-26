@@ -56,25 +56,23 @@ object MultiCropAndroid {
     // Process each crop
     val results = Arguments.createArray()
     val parsedOptions = GetPixelDataOptions.fromMap(pixelOptions)
+    var cropCount = 0
 
     for (crop in crops) {
       val result = PixelProcessor.process(crop, parsedOptions)
       results.pushMap(result.toWritableMap())
       crop.recycle()
+      cropCount++
     }
 
     val totalTimeMs = (System.nanoTime() - startTimeNs) / 1_000_000.0
 
     return Arguments.createMap().apply {
-      // Keep original keys for backward compatibility
-      putArray("results", results)
-      putInt("cropCount", 5)
+      // Use "crops" as the primary key (matching iOS)
+      putArray("crops", results)
+      putInt("count", cropCount)
       putInt("cropWidth", cropWidth)
       putInt("cropHeight", cropHeight)
-
-      // Align with iOS shape and sample app expectations
-      putArray("crops", results)
-      putInt("count", results.size())
       putDouble("totalTimeMs", totalTimeMs)
     }
   }

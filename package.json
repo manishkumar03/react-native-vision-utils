@@ -1,6 +1,6 @@
 {
   "name": "react-native-vision-utils",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "High-performance React Native SDK for image pre-processing for ML/AI pipelines. Native implementations for pixel extraction, tensor conversion, quantization, augmentation, and model-specific preprocessing (YOLO, MobileNet, etc.)",
   "main": "./lib/module/index.js",
   "types": "./lib/typescript/src/index.d.ts",

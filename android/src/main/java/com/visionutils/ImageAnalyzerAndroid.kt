@@ -164,7 +164,7 @@ object ImageAnalyzerAndroid {
    * Validate image against criteria
    */
   fun validate(bitmap: Bitmap, options: ReadableMap): WritableMap {
-    val issues = Arguments.createArray()
+    val errors = Arguments.createArray()
     var isValid = true
 
     val width = bitmap.width
@@ -172,23 +172,23 @@ object ImageAnalyzerAndroid {
 
     // Check minimum dimensions
     if (options.hasKey("minWidth") && width < options.getInt("minWidth")) {
-      issues.pushString("Width ${width} is less than minimum ${options.getInt("minWidth")}")
+      errors.pushString("Width ${width} is less than minimum ${options.getInt("minWidth")}")
       isValid = false
     }
 
     if (options.hasKey("minHeight") && height < options.getInt("minHeight")) {
-      issues.pushString("Height ${height} is less than minimum ${options.getInt("minHeight")}")
+      errors.pushString("Height ${height} is less than minimum ${options.getInt("minHeight")}")
       isValid = false
     }
 
     // Check maximum dimensions
     if (options.hasKey("maxWidth") && width > options.getInt("maxWidth")) {
-      issues.pushString("Width ${width} exceeds maximum ${options.getInt("maxWidth")}")
+      errors.pushString("Width ${width} exceeds maximum ${options.getInt("maxWidth")}")
       isValid = false
     }
 
     if (options.hasKey("maxHeight") && height > options.getInt("maxHeight")) {
-      issues.pushString("Height ${height} exceeds maximum ${options.getInt("maxHeight")}")
+      errors.pushString("Height ${height} exceeds maximum ${options.getInt("maxHeight")}")
       isValid = false
     }
 
@@ -196,12 +196,12 @@ object ImageAnalyzerAndroid {
     val aspectRatio = width.toDouble() / height.toDouble()
 
     if (options.hasKey("minAspectRatio") && aspectRatio < options.getDouble("minAspectRatio")) {
-      issues.pushString("Aspect ratio $aspectRatio is less than minimum ${options.getDouble("minAspectRatio")}")
+      errors.pushString("Aspect ratio $aspectRatio is less than minimum ${options.getDouble("minAspectRatio")}")
       isValid = false
     }
 
     if (options.hasKey("maxAspectRatio") && aspectRatio > options.getDouble("maxAspectRatio")) {
-      issues.pushString("Aspect ratio $aspectRatio exceeds maximum ${options.getDouble("maxAspectRatio")}")
+      errors.pushString("Aspect ratio $aspectRatio exceeds maximum ${options.getDouble("maxAspectRatio")}")
       isValid = false
     }
 
@@ -214,7 +214,7 @@ object ImageAnalyzerAndroid {
         0.01
 
       if (kotlin.math.abs(aspectRatio - required) > tolerance) {
-        issues.pushString("Aspect ratio $aspectRatio does not match required $required (tolerance: $tolerance)")
+        errors.pushString("Aspect ratio $aspectRatio does not match required $required (tolerance: $tolerance)")
         isValid = false
       }
     }
@@ -223,13 +223,13 @@ object ImageAnalyzerAndroid {
     val channels = if (bitmap.hasAlpha()) 4 else 3
 
     if (options.hasKey("requiredChannels") && channels != options.getInt("requiredChannels")) {
-      issues.pushString("Image has $channels channels but $${options.getInt("requiredChannels")} required")
+      errors.pushString("Image has $channels channels but $${options.getInt("requiredChannels")} required")
       isValid = false
     }
 
     return Arguments.createMap().apply {
       putBoolean("isValid", isValid)
-      putArray("issues", issues)
+      putArray("errors", errors)
       putInt("width", width)
       putInt("height", height)
       putInt("channels", channels)

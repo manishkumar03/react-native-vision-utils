@@ -233,6 +233,10 @@ function validateSource(source: GetPixelDataOptions['source']): void {
     throw new VisionUtilsException('INVALID_SOURCE', 'Source is required');
   }
 
+  if (!source.type) {
+    throw new VisionUtilsException('INVALID_SOURCE', 'Source type is required');
+  }
+
   const validTypes = ['url', 'file', 'base64', 'asset', 'photoLibrary'];
   if (!validTypes.includes(source.type)) {
     throw new VisionUtilsException(

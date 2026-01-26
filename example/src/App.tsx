@@ -345,10 +345,11 @@ const App: React.FC = () => {
       const height =
         validation.metadata?.height ??
         (validation as unknown as { height: number }).height;
+      const errors = validation.errors || (validation as any).issues || [];
       Alert.alert(
         'Image Validation',
         `Valid: ${validation.isValid}\nErrors: ${
-          validation.errors.length > 0 ? validation.errors.join(', ') : 'None'
+          errors.length > 0 ? errors.join(', ') : 'None'
         }\nSize: ${width}x${height}`
       );
     } catch (err: unknown) {
@@ -473,7 +474,7 @@ const App: React.FC = () => {
       if (result.base64) {
         setProcessedImageUri(`data:image/png;base64,${result.base64}`);
       }
-      const regionsInfo = result.regions
+      const regionsInfo = (result.regions || [])
         .map(
           (
             r: { x: number; y: number; width: number; height: number },
