@@ -29,6 +29,9 @@ object ImageAugmenterAndroid {
    * Apply augmentations to an image
    */
   fun apply(bitmap: Bitmap, augmentations: ReadableMap): WritableMap {
+    // Track processing time for parity with iOS
+    val startTimeNs = System.nanoTime()
+
     var result = bitmap.copy(Bitmap.Config.ARGB_8888, true)
 
     // Rotation
@@ -90,6 +93,7 @@ object ImageAugmenterAndroid {
 
     val width = result.width
     val height = result.height
+    val processingTimeMs = (System.nanoTime() - startTimeNs) / 1_000_000.0
 
     result.recycle()
 
@@ -97,6 +101,7 @@ object ImageAugmenterAndroid {
       putString("base64", base64String)
       putInt("width", width)
       putInt("height", height)
+      putDouble("processingTimeMs", processingTimeMs)
     }
   }
 

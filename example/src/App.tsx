@@ -394,9 +394,13 @@ const App: React.FC = () => {
       if (result.base64) {
         setProcessedImageUri(`data:image/png;base64,${result.base64}`);
       }
+      const timeMs =
+        result && typeof result.processingTimeMs === 'number'
+          ? result.processingTimeMs
+          : 0;
       Alert.alert(
         'Augmentations Applied',
-        `Processed in ${result.processingTimeMs.toFixed(2)}ms\nOutput: ${
+        `Processed in ${timeMs.toFixed(2)}ms\nOutput: ${
           result.base64 ? 'Generated' : 'N/A'
         }`
       );
@@ -421,11 +425,14 @@ const App: React.FC = () => {
         },
         { width: 100, height: 100 }
       );
+      const crops = (result as any).crops || (result as any).results || [];
+      const totalTime =
+        result && typeof result.totalTimeMs === 'number'
+          ? result.totalTimeMs
+          : 0;
       Alert.alert(
         'Five Crop Extract',
-        `Extracted ${
-          result.crops.length
-        } crops\nTotal time: ${result.totalTimeMs.toFixed(2)}ms`
+        `Extracted ${crops.length} crops\nTotal time: ${totalTime.toFixed(2)}ms`
       );
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);

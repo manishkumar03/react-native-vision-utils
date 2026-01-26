@@ -19,6 +19,8 @@ object MultiCropAndroid {
     options: ReadableMap,
     pixelOptions: ReadableMap
   ): WritableMap {
+    val startTimeNs = System.nanoTime()
+
     val cropWidth = options.getInt("width")
     val cropHeight = options.getInt("height")
 
@@ -61,11 +63,19 @@ object MultiCropAndroid {
       crop.recycle()
     }
 
+    val totalTimeMs = (System.nanoTime() - startTimeNs) / 1_000_000.0
+
     return Arguments.createMap().apply {
+      // Keep original keys for backward compatibility
       putArray("results", results)
       putInt("cropCount", 5)
       putInt("cropWidth", cropWidth)
       putInt("cropHeight", cropHeight)
+
+      // Align with iOS shape and sample app expectations
+      putArray("crops", results)
+      putInt("count", results.size())
+      putDouble("totalTimeMs", totalTimeMs)
     }
   }
 

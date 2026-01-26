@@ -2,7 +2,9 @@ package com.visionutils
 
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.ReadableMap
+import com.facebook.react.bridge.WritableArray
 import com.facebook.react.bridge.WritableMap
+import com.facebook.react.bridge.WritableNativeArray
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -71,7 +73,7 @@ object QuantizationAndroid {
         val processingTimeMs = (System.nanoTime() - startTime) / 1_000_000.0
 
         val result = Arguments.createMap()
-        result.putArray("data", Arguments.fromArray(resultData.toTypedArray()))
+        result.putArray("data", intArrayToWritableArray(resultData))
         result.putString("dtype", dtype)
         result.putString("mode", mode)
 
@@ -215,9 +217,25 @@ object QuantizationAndroid {
         val processingTimeMs = (System.nanoTime() - startTime) / 1_000_000.0
 
         val result = Arguments.createMap()
-        result.putArray("data", Arguments.fromArray(resultData.toTypedArray()))
+        result.putArray("data", floatArrayToWritableArray(resultData))
         result.putDouble("processingTimeMs", processingTimeMs)
         return result
+    }
+
+    private fun intArrayToWritableArray(data: IntArray): WritableArray {
+        val array = WritableNativeArray()
+        for (value in data) {
+            array.pushInt(value)
+        }
+        return array
+    }
+
+    private fun floatArrayToWritableArray(data: FloatArray): WritableArray {
+        val array = WritableNativeArray()
+        for (value in data) {
+            array.pushDouble(value.toDouble())
+        }
+        return array
     }
 
     /**
@@ -383,10 +401,10 @@ object QuantizationAndroid {
         }
 
         val result = Arguments.createMap()
-        result.putArray("scale", Arguments.fromArray(scales.toTypedArray()))
-        result.putArray("zeroPoint", Arguments.fromArray(zeroPoints.toTypedArray()))
-        result.putArray("min", Arguments.fromArray(mins.toTypedArray()))
-        result.putArray("max", Arguments.fromArray(maxs.toTypedArray()))
+        result.putArray("scale", floatArrayToWritableArray(scales))
+        result.putArray("zeroPoint", floatArrayToWritableArray(zeroPoints))
+        result.putArray("min", floatArrayToWritableArray(mins))
+        result.putArray("max", floatArrayToWritableArray(maxs))
         return result
     }
 
