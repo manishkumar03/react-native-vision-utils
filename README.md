@@ -15,6 +15,7 @@ A high-performance React Native library for image preprocessing optimized for ML
 - 🤖 **Model Presets**: Pre-configured settings for YOLO, MobileNet, EfficientNet, ResNet, ViT, CLIP, SAM, DINO, DETR
 - 🔄 **Image Augmentation**: Rotation, flip, brightness, contrast, saturation, blur
 - 🎨 **Color Jitter**: Granular brightness/contrast/saturation/hue control with range support and seeded randomness
+- ✂️ **Cutout/Random Erasing**: Mask random regions with constant/noise fill for robustness training
 - 📈 **Image Analysis**: Statistics, metadata, validation, blur detection
 - 🧮 **Tensor Operations**: Channel extraction, patch extraction, permutation, batch concatenation
 - 🔙 **Tensor to Image**: Convert processed tensors back to images
@@ -478,6 +479,78 @@ const reproducible = await colorJitter(
 | `appliedContrast` | number | Actual contrast value applied |
 | `appliedSaturation` | number | Actual saturation value applied |
 | `appliedHue` | number | Actual hue shift value applied |
+| `seed` | number | Seed used for random generation |
+| `processingTimeMs` | number | Processing time in milliseconds |
+
+#### `cutout(source, options)`
+
+Apply cutout (random erasing) augmentation to mask random rectangular regions. Improves model robustness by forcing it to rely on diverse features.
+
+```typescript
+import { cutout } from 'react-native-vision-utils';
+
+// Basic cutout with black fill
+const result = await cutout(
+  { type: 'file', value: '/path/to/image.jpg' },
+  {
+    numCutouts: 1,
+    minSize: 0.02,      // 2% of image area min
+    maxSize: 0.33,      // 33% of image area max
+  }
+);
+
+console.log(result.base64);       // Augmented image
+console.log(result.numCutouts);   // Number of cutouts applied
+console.log(result.regions);      // Details of each cutout
+
+// Multiple cutouts with noise fill
+const noisy = await cutout(
+  { type: 'url', value: 'https://example.com/image.jpg' },
+  {
+    numCutouts: 3,
+    minSize: 0.01,
+    maxSize: 0.1,
+    fillMode: 'noise',
+    seed: 42,  // Reproducible
+  }
+);
+
+// Cutout with custom gray fill and probability
+const probabilistic = await cutout(
+  { type: 'base64', value: base64Data },
+  {
+    numCutouts: 2,
+    fillMode: 'constant',
+    fillValue: [128, 128, 128],  // Gray
+    probability: 0.5,  // 50% chance of applying
+  }
+);
+```
+
+**Options:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `numCutouts` | number | 1 | Number of cutout regions to apply |
+| `minSize` | number | 0.02 | Minimum cutout size as fraction of image area (0-1) |
+| `maxSize` | number | 0.33 | Maximum cutout size as fraction of image area (0-1) |
+| `minAspect` | number | 0.3 | Minimum aspect ratio (width/height) |
+| `maxAspect` | number | 3.3 | Maximum aspect ratio (width/height) |
+| `fillMode` | string | 'constant' | Fill mode: 'constant', 'noise', or 'random' |
+| `fillValue` | [R,G,B] | [0,0,0] | Fill color for 'constant' mode (0-255) |
+| `probability` | number | 1.0 | Probability of applying cutout (0-1) |
+| `seed` | number | random | Seed for reproducible cutouts |
+
+**Result:**
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `base64` | string | Augmented image as base64 PNG |
+| `width` | number | Output image width |
+| `height` | number | Output image height |
+| `applied` | boolean | Whether cutout was applied (based on probability) |
+| `numCutouts` | number | Number of cutout regions applied |
+| `regions` | array | Details of each cutout: {x, y, width, height, fill} |
 | `seed` | number | Seed used for random generation |
 | `processingTimeMs` | number | Processing time in milliseconds |
 

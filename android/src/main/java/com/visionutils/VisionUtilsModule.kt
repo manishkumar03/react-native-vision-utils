@@ -519,6 +519,36 @@ class VisionUtilsModule(reactContext: ReactApplicationContext) :
   }
 
   /**
+   * Apply cutout/random erasing augmentation
+   */
+  override fun cutout(
+    source: ReadableMap,
+    options: ReadableMap,
+    promise: Promise
+  ) {
+    scope.launch {
+      try {
+        val context = reactApplicationContext.applicationContext
+        val imageSource = ImageSource.fromMap(source)
+        val bitmap = ImageLoader.loadImage(context, imageSource)
+        val result = CutoutAndroid.apply(bitmap, options)
+
+        withContext(Dispatchers.Main) {
+          promise.resolve(result)
+        }
+      } catch (e: VisionUtilsException) {
+        withContext(Dispatchers.Main) {
+          promise.reject(e.code, e.message)
+        }
+      } catch (e: Exception) {
+        withContext(Dispatchers.Main) {
+          promise.reject("CUTOUT_ERROR", e.message ?: "Cutout failed")
+        }
+      }
+    }
+  }
+
+  /**
    * Quantize float data to integer format
    */
   override fun quantize(

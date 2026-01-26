@@ -159,6 +159,14 @@ export interface Spec extends TurboModule {
   colorJitter(source: Object, options: Object): Promise<Object>;
 
   /**
+   * Apply cutout/random erasing augmentation
+   * @param source - ImageSource serialized as Object
+   * @param options - CutoutOptions serialized as Object
+   * @returns Promise resolving to CutoutResult as Object
+   */
+  cutout(source: Object, options: Object): Promise<Object>;
+
+  /**
    * Quantize float data to int8/uint8/int16
    * @param data - Float pixel data as number array
    * @param options - QuantizeOptions serialized as Object

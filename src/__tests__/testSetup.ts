@@ -15,6 +15,7 @@ const mockConcatenateToBatch = jest.fn();
 const mockPermute = jest.fn();
 const mockApplyAugmentations = jest.fn();
 const mockColorJitter = jest.fn();
+const mockCutout = jest.fn();
 const mockClearCache = jest.fn();
 const mockGetCacheStats = jest.fn();
 const mockQuantize = jest.fn();
@@ -60,6 +61,7 @@ NativeModules.VisionUtils = {
   permute: mockPermute,
   applyAugmentations: mockApplyAugmentations,
   colorJitter: mockColorJitter,
+  cutout: mockCutout,
   clearCache: mockClearCache,
   getCacheStats: mockGetCacheStats,
   quantize: mockQuantize,
@@ -103,6 +105,7 @@ export {
   mockPermute,
   mockApplyAugmentations,
   mockColorJitter,
+  mockCutout,
   mockClearCache,
   mockGetCacheStats,
   mockQuantize,

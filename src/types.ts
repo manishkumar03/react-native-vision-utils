@@ -2281,3 +2281,137 @@ export interface ColorJitterResult {
   /** Processing time in milliseconds */
   processingTimeMs: number;
 }
+
+// =============================================================================
+// Cutout / Random Erasing Types
+// =============================================================================
+
+/**
+ * Fill mode for cutout regions
+ */
+export type CutoutFillMode = 'constant' | 'noise' | 'random';
+
+/**
+ * Options for cutout/random erasing augmentation.
+ *
+ * Randomly masks rectangular regions of the image to improve model robustness.
+ * Can apply single or multiple cutouts with configurable size and fill.
+ *
+ * @example
+ * // Single cutout with constant fill
+ * {
+ *   numCutouts: 1,
+ *   minSize: 0.02,      // 2% of image area min
+ *   maxSize: 0.33,      // 33% of image area max
+ *   minAspect: 0.3,     // Aspect ratio range
+ *   maxAspect: 3.3,
+ *   fillMode: 'constant',
+ *   fillValue: [128, 128, 128],  // Gray fill
+ * }
+ *
+ * @example
+ * // Multiple cutouts with noise fill
+ * {
+ *   numCutouts: 3,
+ *   minSize: 0.01,
+ *   maxSize: 0.1,
+ *   fillMode: 'noise',
+ *   seed: 42,  // Reproducible
+ * }
+ */
+export interface CutoutOptions {
+  /**
+   * Number of cutout regions to apply.
+   * @default 1
+   */
+  numCutouts?: number;
+
+  /**
+   * Minimum size of cutout as fraction of image area (0-1).
+   * @default 0.02
+   */
+  minSize?: number;
+
+  /**
+   * Maximum size of cutout as fraction of image area (0-1).
+   * @default 0.33
+   */
+  maxSize?: number;
+
+  /**
+   * Minimum aspect ratio (width/height) of cutout.
+   * @default 0.3
+   */
+  minAspect?: number;
+
+  /**
+   * Maximum aspect ratio (width/height) of cutout.
+   * @default 3.3
+   */
+  maxAspect?: number;
+
+  /**
+   * Fill mode for cutout regions.
+   * - 'constant': Fill with fillValue color
+   * - 'noise': Fill with random noise
+   * - 'random': Fill with random constant color per cutout
+   * @default 'constant'
+   */
+  fillMode?: CutoutFillMode;
+
+  /**
+   * Fill color for 'constant' mode as [R, G, B] (0-255).
+   * @default [0, 0, 0] (black)
+   */
+  fillValue?: [number, number, number];
+
+  /**
+   * Probability of applying cutout (0-1).
+   * @default 1.0
+   */
+  probability?: number;
+
+  /**
+   * Random seed for reproducible cutouts.
+   * If not provided, random values are generated.
+   */
+  seed?: number;
+}
+
+/**
+ * Information about a single cutout region
+ */
+export interface CutoutRegion {
+  /** X coordinate of top-left corner */
+  x: number;
+  /** Y coordinate of top-left corner */
+  y: number;
+  /** Width of cutout region */
+  width: number;
+  /** Height of cutout region */
+  height: number;
+  /** Fill color used [R, G, B] or 'noise' */
+  fill: [number, number, number] | 'noise';
+}
+
+/**
+ * Result from cutout operation
+ */
+export interface CutoutResult {
+  /** Augmented image as base64 PNG */
+  base64: string;
+  /** Output image width */
+  width: number;
+  /** Output image height */
+  height: number;
+  /** Whether cutout was applied (based on probability) */
+  applied: boolean;
+  /** Number of cutout regions applied */
+  numCutouts: number;
+  /** Details of each cutout region */
+  regions: CutoutRegion[];
+  /** Seed used for random generation */
+  seed: number;
+  /** Processing time in milliseconds */
+  processingTimeMs: number;
+}

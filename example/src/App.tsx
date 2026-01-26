@@ -19,6 +19,7 @@ import {
   getImageStatistics,
   applyAugmentations,
   colorJitter,
+  cutout,
   extractChannel,
   tensorToImage,
   fiveCrop,
@@ -444,6 +445,47 @@ const App: React.FC = () => {
           `  Contrast: ${result.appliedContrast.toFixed(3)}\n` +
           `  Saturation: ${result.appliedSaturation.toFixed(3)}\n` +
           `  Hue: ${result.appliedHue.toFixed(3)}\n\n` +
+          `Seed: ${result.seed}\n` +
+          `Time: ${result.processingTimeMs.toFixed(2)}ms`
+      );
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      Alert.alert('Error', errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentImage]);
+
+  // Test cutout augmentation
+  const testCutout = useCallback(async () => {
+    setLoading(true);
+    try {
+      const result = await cutout(
+        { type: 'url', value: currentImage },
+        {
+          numCutouts: 2,
+          minSize: 0.05,
+          maxSize: 0.2,
+          fillMode: 'noise',
+          seed: 42, // For reproducibility
+        }
+      );
+      if (result.base64) {
+        setProcessedImageUri(`data:image/png;base64,${result.base64}`);
+      }
+      const regionsInfo = result.regions
+        .map(
+          (
+            r: { x: number; y: number; width: number; height: number },
+            i: number
+          ) => `  ${i + 1}: ${r.width}x${r.height} at (${r.x}, ${r.y})`
+        )
+        .join('\n');
+      Alert.alert(
+        'Cutout Applied',
+        `Applied: ${result.applied}\n` +
+          `Cutouts: ${result.numCutouts}\n` +
+          `Regions:\n${regionsInfo}\n\n` +
           `Seed: ${result.seed}\n` +
           `Time: ${result.processingTimeMs.toFixed(2)}ms`
       );
@@ -1748,6 +1790,18 @@ const App: React.FC = () => {
               disabled={loading}
             >
               <Text style={styles.buttonText}>Color Jitter</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.augmentButton,
+                loading && styles.buttonDisabled,
+              ]}
+              onPress={testCutout}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>Cutout / Random Erasing</Text>
             </TouchableOpacity>
 
             <TouchableOpacity

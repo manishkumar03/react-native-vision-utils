@@ -102,6 +102,9 @@ import {
   // Color Jitter Types
   type ColorJitterOptions,
   type ColorJitterResult,
+  // Cutout Types
+  type CutoutOptions,
+  type CutoutResult,
 } from './types';
 
 // Re-export all types
@@ -1404,6 +1407,114 @@ export async function colorJitter(
       source as unknown as Object,
       options as unknown as Object
     )) as ColorJitterResult;
+    return result;
+  } catch (error) {
+    throw VisionUtilsException.fromNativeError(error);
+  }
+}
+
+/**
+ * Apply cutout (random erasing) augmentation to mask random regions.
+ *
+ * Randomly erases rectangular regions of the image with a constant color or noise,
+ * improving model robustness by forcing it to rely on diverse features.
+ *
+ * @param source - Image source specification
+ * @param options - Cutout options including number of cutouts, size range, and fill mode
+ * @returns Promise resolving to CutoutResult with the augmented image
+ *
+ * @example
+ * // Basic cutout with black fill
+ * const result = await cutout(
+ *   { type: 'file', value: '/path/to/image.jpg' },
+ *   {
+ *     numCutouts: 1,
+ *     minSize: 0.02,
+ *     maxSize: 0.33,
+ *   }
+ * );
+ *
+ * @example
+ * // Multiple cutouts with noise fill
+ * const result = await cutout(
+ *   { type: 'url', value: 'https://example.com/image.jpg' },
+ *   {
+ *     numCutouts: 3,
+ *     minSize: 0.01,
+ *     maxSize: 0.1,
+ *     fillMode: 'noise',
+ *     seed: 42,
+ *   }
+ * );
+ *
+ * @example
+ * // Cutout with custom gray fill and probability
+ * const result = await cutout(
+ *   { type: 'base64', value: base64Data },
+ *   {
+ *     numCutouts: 2,
+ *     fillMode: 'constant',
+ *     fillValue: [128, 128, 128],
+ *     probability: 0.5,  // 50% chance of applying
+ *   }
+ * );
+ */
+export async function cutout(
+  source: ImageSource,
+  options: CutoutOptions = {}
+): Promise<CutoutResult> {
+  try {
+    validateSource(source);
+
+    // Validate options
+    if (options.numCutouts !== undefined && options.numCutouts < 0) {
+      throw new VisionUtilsException(
+        'INVALID_OPTIONS',
+        'numCutouts must be non-negative'
+      );
+    }
+    if (
+      options.minSize !== undefined &&
+      (options.minSize < 0 || options.minSize > 1)
+    ) {
+      throw new VisionUtilsException(
+        'INVALID_OPTIONS',
+        'minSize must be between 0 and 1'
+      );
+    }
+    if (
+      options.maxSize !== undefined &&
+      (options.maxSize < 0 || options.maxSize > 1)
+    ) {
+      throw new VisionUtilsException(
+        'INVALID_OPTIONS',
+        'maxSize must be between 0 and 1'
+      );
+    }
+    if (
+      options.minSize !== undefined &&
+      options.maxSize !== undefined &&
+      options.minSize > options.maxSize
+    ) {
+      throw new VisionUtilsException(
+        'INVALID_OPTIONS',
+        'minSize must be <= maxSize'
+      );
+    }
+    if (
+      options.probability !== undefined &&
+      (options.probability < 0 || options.probability > 1)
+    ) {
+      throw new VisionUtilsException(
+        'INVALID_OPTIONS',
+        'probability must be between 0 and 1'
+      );
+    }
+
+    const result = (await VisionUtils.cutout(
+      source as unknown as Object,
+      options as unknown as Object
+    )) as CutoutResult;
     return result;
   } catch (error) {
     throw VisionUtilsException.fromNativeError(error);

@@ -1,5 +1,5 @@
 /**
- * @fileoverview Tests for grid extraction, random crop, tensor validation, batch assembly, and color jitter functions.
+ * @fileoverview Tests for grid extraction, random crop, tensor validation, batch assembly, color jitter, and cutout functions.
  */
 
 import {
@@ -8,6 +8,7 @@ import {
   validateTensor,
   assembleBatch,
   colorJitter,
+  cutout,
 } from '../index';
 import type {
   GridExtractOptions,
@@ -15,6 +16,7 @@ import type {
   TensorSpec,
   PixelDataResult,
   ColorJitterOptions,
+  CutoutOptions,
 } from '../types';
 import NativeVisionUtils from '../NativeVisionUtils';
 
@@ -25,6 +27,7 @@ jest.mock('../NativeVisionUtils', () => ({
     extractGrid: jest.fn(),
     randomCrop: jest.fn(),
     colorJitter: jest.fn(),
+    cutout: jest.fn(),
   },
 }));
 
@@ -497,6 +500,159 @@ describe('Color Jitter', () => {
       expect(mockedNative.colorJitter).toHaveBeenCalled();
       expect(result.appliedBrightness).toBe(0);
       expect(result.appliedContrast).toBe(1);
+    });
+  });
+});
+
+describe('Cutout / Random Erasing', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe('cutout', () => {
+    it('should call native cutout with correct parameters', async () => {
+      const mockResult = {
+        base64: 'mockBase64Data',
+        width: 224,
+        height: 224,
+        applied: true,
+        numCutouts: 2,
+        regions: [
+          { x: 10, y: 20, width: 50, height: 40, fill: [0, 0, 0] },
+          { x: 100, y: 80, width: 30, height: 60, fill: [0, 0, 0] },
+        ],
+        seed: 42,
+        processingTimeMs: 15,
+      };
+
+      mockedNative.cutout!.mockResolvedValue(mockResult);
+
+      const source = { type: 'file' as const, value: '/path/to/test.jpg' };
+      const options: CutoutOptions = {
+        numCutouts: 2,
+        minSize: 0.02,
+        maxSize: 0.33,
+        fillMode: 'constant',
+        fillValue: [0, 0, 0],
+        seed: 42,
+      };
+
+      const result = await cutout(source, options);
+
+      expect(mockedNative.cutout).toHaveBeenCalledWith(source, options);
+      expect(result.applied).toBe(true);
+      expect(result.numCutouts).toBe(2);
+      expect(result.regions).toHaveLength(2);
+    });
+
+    it('should support noise fill mode', async () => {
+      const mockResult = {
+        base64: 'mockBase64Data',
+        width: 224,
+        height: 224,
+        applied: true,
+        numCutouts: 1,
+        regions: [{ x: 50, y: 50, width: 100, height: 100, fill: 'noise' }],
+        seed: 123,
+        processingTimeMs: 10,
+      };
+
+      mockedNative.cutout!.mockResolvedValue(mockResult);
+
+      const source = {
+        type: 'url' as const,
+        value: 'https://example.com/test.jpg',
+      };
+      const options: CutoutOptions = {
+        numCutouts: 1,
+        fillMode: 'noise',
+      };
+
+      const result = await cutout(source, options);
+
+      expect(mockedNative.cutout).toHaveBeenCalledWith(source, options);
+      expect(result.regions[0]?.fill).toBe('noise');
+    });
+
+    it('should reject invalid minSize', async () => {
+      const source = { type: 'file' as const, value: '/path/to/test.jpg' };
+      const options: CutoutOptions = {
+        minSize: 1.5, // Invalid: > 1
+      };
+
+      await expect(cutout(source, options)).rejects.toThrow(
+        'minSize must be between 0 and 1'
+      );
+    });
+
+    it('should reject minSize > maxSize', async () => {
+      const source = { type: 'file' as const, value: '/path/to/test.jpg' };
+      const options: CutoutOptions = {
+        minSize: 0.5,
+        maxSize: 0.2,
+      };
+
+      await expect(cutout(source, options)).rejects.toThrow(
+        'minSize must be <= maxSize'
+      );
+    });
+
+    it('should reject invalid probability', async () => {
+      const source = { type: 'file' as const, value: '/path/to/test.jpg' };
+      const options: CutoutOptions = {
+        probability: 1.5, // Invalid: > 1
+      };
+
+      await expect(cutout(source, options)).rejects.toThrow(
+        'probability must be between 0 and 1'
+      );
+    });
+
+    it('should work with default options', async () => {
+      const mockResult = {
+        base64: 'mockBase64Data',
+        width: 224,
+        height: 224,
+        applied: true,
+        numCutouts: 1,
+        regions: [{ x: 30, y: 40, width: 80, height: 60, fill: [0, 0, 0] }],
+        seed: 999,
+        processingTimeMs: 5,
+      };
+
+      mockedNative.cutout!.mockResolvedValue(mockResult);
+
+      const source = { type: 'file' as const, value: '/path/to/test.jpg' };
+      const result = await cutout(source);
+
+      expect(mockedNative.cutout).toHaveBeenCalled();
+      expect(result.applied).toBe(true);
+    });
+
+    it('should handle probability=0 (not applied)', async () => {
+      const mockResult = {
+        base64: 'mockBase64Data',
+        width: 224,
+        height: 224,
+        applied: false,
+        numCutouts: 0,
+        regions: [],
+        seed: 42,
+        processingTimeMs: 2,
+      };
+
+      mockedNative.cutout!.mockResolvedValue(mockResult);
+
+      const source = { type: 'file' as const, value: '/path/to/test.jpg' };
+      const options: CutoutOptions = {
+        probability: 0,
+      };
+
+      const result = await cutout(source, options);
+
+      expect(result.applied).toBe(false);
+      expect(result.numCutouts).toBe(0);
+      expect(result.regions).toHaveLength(0);
     });
   });
 });

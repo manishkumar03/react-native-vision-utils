@@ -518,6 +518,34 @@ public class VisionUtilsBridge: NSObject {
         }
     }
 
+    @objc
+    public static func cutout(
+        _ source: NSDictionary,
+        options: NSDictionary,
+        resolve: @escaping (NSDictionary) -> Void,
+        reject: @escaping (String, String) -> Void
+    ) {
+        Task {
+            do {
+                guard let sourceDict = source as? [String: Any] else {
+                    reject("INVALID_SOURCE", "Invalid source format")
+                    return
+                }
+
+                let optionsDict = options as? [String: Any] ?? [:]
+                let imageSource = try ImageSource(from: sourceDict)
+                let image = try await ImageLoader.loadImage(from: imageSource)
+                let result = try Cutout.apply(to: image, options: optionsDict)
+
+                resolve(result as NSDictionary)
+            } catch let error as VisionUtilsError {
+                reject(error.code, error.message)
+            } catch {
+                reject("CUTOUT_ERROR", error.localizedDescription)
+            }
+        }
+    }
+
     // MARK: - Quantization
 
     @objc
