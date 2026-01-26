@@ -79,6 +79,9 @@ import {
   type KeypointsDrawResult,
   type OverlayMaskOptions,
   type OverlayHeatmapOptions,
+  // Blur Detection Types
+  type DetectBlurOptions,
+  type BlurDetectionResult,
 } from './types';
 
 // Re-export all types
@@ -2549,6 +2552,59 @@ export async function overlayHeatmap(
   try {
     const result = await VisionUtils.overlayHeatmap(source, heatmap, opts);
     return result as DrawResult;
+  } catch (error) {
+    throw VisionUtilsException.fromNativeError(error);
+  }
+}
+
+// =============================================================================
+// Blur Detection API
+// =============================================================================
+
+/**
+ * Detect if an image is blurry using Laplacian variance method
+ *
+ * This function analyzes the image sharpness by:
+ * 1. Converting to grayscale
+ * 2. Applying Laplacian edge detection kernel
+ * 3. Calculating variance of the response
+ *
+ * Low variance indicates fewer edges = blurry image.
+ * High variance indicates more edges = sharp image.
+ *
+ * @param source - Image source to analyze
+ * @param options - Detection options
+ * @returns Promise resolving to blur detection result
+ *
+ * @example
+ * // Basic blur detection with default threshold
+ * const result = await detectBlur({ type: 'file', value: '/path/to/photo.jpg' });
+ * if (result.isBlurry) {
+ *   console.log('Image is blurry! Score:', result.score);
+ * }
+ *
+ * @example
+ * // Custom threshold and downsampling for faster processing
+ * const result = await detectBlur(
+ *   { type: 'url', value: 'https://example.com/image.jpg' },
+ *   { threshold: 150, downsampleSize: 500 }
+ * );
+ * console.log(`Blur score: ${result.score} (threshold: ${result.threshold})`);
+ */
+export async function detectBlur(
+  source: ImageSource,
+  options: DetectBlurOptions = {}
+): Promise<BlurDetectionResult> {
+  validateSource(source);
+
+  const opts = {
+    threshold: options.threshold ?? 100,
+    downsampleSize: options.downsampleSize,
+  };
+
+  try {
+    const result = await VisionUtils.detectBlur(source, opts);
+    return result as BlurDetectionResult;
   } catch (error) {
     throw VisionUtilsException.fromNativeError(error);
   }

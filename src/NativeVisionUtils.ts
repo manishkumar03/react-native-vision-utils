@@ -376,6 +376,14 @@ export interface Spec extends TurboModule {
   ): Promise<Object>;
 
   /**
+   * Detect blur in an image using Laplacian variance
+   * @param source - Image source
+   * @param options - Detection options (threshold, downsampleSize)
+   * @returns Promise resolving to blur detection result
+   */
+  detectBlur(source: Object, options: Object): Promise<Object>;
+
+  /**
    * Clear the pixel data cache
    */
   clearCache(): Promise<void>;

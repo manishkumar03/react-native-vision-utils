@@ -1808,3 +1808,41 @@ export interface OverlayHeatmapOptions {
   /** Quality for JPEG output 0-100 (default: 90) */
   quality?: number;
 }
+
+// =============================================================================
+// Blur Detection Types
+// =============================================================================
+
+/**
+ * Options for blur detection
+ */
+export interface DetectBlurOptions {
+  /**
+   * Laplacian variance threshold below which image is considered blurry
+   * Higher values = stricter (more likely to flag as blurry)
+   * Typical range: 50-500, default: 100
+   */
+  threshold?: number;
+  /**
+   * Optional max dimension to downsample to for faster processing
+   * Set to e.g. 500 to limit processing to 500x500 max
+   */
+  downsampleSize?: number;
+}
+
+/**
+ * Result of blur detection
+ */
+export interface BlurDetectionResult {
+  /** Whether the image is considered blurry */
+  isBlurry: boolean;
+  /**
+   * Laplacian variance score (higher = sharper)
+   * Compare against threshold to determine blur
+   */
+  score: number;
+  /** Threshold used for classification */
+  threshold: number;
+  /** Processing time in milliseconds */
+  processingTimeMs: number;
+}

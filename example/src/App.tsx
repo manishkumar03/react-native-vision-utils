@@ -41,6 +41,7 @@ import {
   drawBoxes,
   drawKeypoints,
   overlayHeatmap,
+  detectBlur,
   type PixelDataResult,
   type ColorFormat,
   type DataLayout,
@@ -1284,6 +1285,31 @@ const App: React.FC = () => {
     }
   }, []);
 
+  // Test blur detection
+  const testBlurDetection = useCallback(async () => {
+    setLoading(true);
+    try {
+      const result = await detectBlur(
+        { type: 'url', value: currentImage },
+        { threshold: 100, downsampleSize: 500 }
+      );
+
+      Alert.alert(
+        'Blur Detection',
+        `Is Blurry: ${result.isBlurry ? 'YES' : 'NO'}\n` +
+          `Score: ${result.score.toFixed(2)}\n` +
+          `Threshold: ${result.threshold}\n` +
+          `(Higher score = sharper image)\n\n` +
+          `Time: ${result.processingTimeMs.toFixed(2)}ms`
+      );
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      Alert.alert('Error', errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentImage]);
+
   const clearResults = useCallback(() => {
     setResults([]);
   }, []);
@@ -1420,6 +1446,18 @@ const App: React.FC = () => {
             disabled={loading}
           >
             <Text style={styles.buttonText}>Validate Source</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.button,
+              styles.analysisButton,
+              loading && styles.buttonDisabled,
+            ]}
+            onPress={testBlurDetection}
+            disabled={loading}
+          >
+            <Text style={styles.buttonText}>Detect Blur</Text>
           </TouchableOpacity>
         </View>
 

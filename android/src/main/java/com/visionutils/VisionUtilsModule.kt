@@ -1461,6 +1461,36 @@ class VisionUtilsModule(reactContext: ReactApplicationContext) :
     }
   }
 
+  /**
+   * Detect blur in an image using Laplacian variance
+   */
+  override fun detectBlur(source: ReadableMap, options: ReadableMap, promise: Promise) {
+    scope.launch {
+      try {
+        val context = reactApplicationContext.applicationContext
+        val imageSource = ImageSource.fromMap(source)
+        val bitmap = ImageLoader.loadImage(context, imageSource)
+
+        val threshold = if (options.hasKey("threshold")) options.getDouble("threshold") else 100.0
+        val downsampleSize = if (options.hasKey("downsampleSize")) options.getInt("downsampleSize") else null
+
+        val result = BlurDetectorAndroid.detectBlur(bitmap, threshold, downsampleSize)
+
+        withContext(Dispatchers.Main) {
+          promise.resolve(result)
+        }
+      } catch (e: VisionUtilsException) {
+        withContext(Dispatchers.Main) {
+          promise.reject(e.code, e.message)
+        }
+      } catch (e: Exception) {
+        withContext(Dispatchers.Main) {
+          promise.reject("BLUR_DETECTION_ERROR", e.message ?: "Failed to detect blur")
+        }
+      }
+    }
+  }
+
   companion object {
     const val NAME = NativeVisionUtilsSpec.NAME
   }

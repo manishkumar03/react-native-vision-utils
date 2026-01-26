@@ -1247,4 +1247,42 @@ public class VisionUtilsBridge: NSObject {
             }
         }
     }
+
+    // MARK: - Blur Detection
+
+    @objc
+    public static func detectBlur(
+        _ source: NSDictionary,
+        options: NSDictionary,
+        resolve: @escaping (NSDictionary) -> Void,
+        reject: @escaping (String, String) -> Void
+    ) {
+        Task {
+            do {
+                guard let sourceDict = source as? [String: Any] else {
+                    reject("INVALID_SOURCE", "Invalid source format")
+                    return
+                }
+
+                let optionsDict = options as? [String: Any] ?? [:]
+                let threshold = optionsDict["threshold"] as? Double ?? 100.0
+                let downsampleSize = optionsDict["downsampleSize"] as? Int
+
+                let imageSource = try ImageSource(from: sourceDict)
+                let image = try await ImageLoader.loadImage(from: imageSource)
+
+                let result = try BlurDetector.detectBlur(
+                    image: image,
+                    threshold: threshold,
+                    downsampleSize: downsampleSize
+                )
+
+                resolve(result.toDictionary() as NSDictionary)
+            } catch let error as VisionUtilsError {
+                reject(error.code, error.message)
+            } catch {
+                reject("BLUR_DETECTION_ERROR", error.localizedDescription)
+            }
+        }
+    }
 }

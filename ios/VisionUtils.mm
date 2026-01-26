@@ -546,6 +546,21 @@
     }];
 }
 
+// MARK: - Blur Detection
+
+- (void)detectBlur:(NSDictionary *)source
+           options:(NSDictionary *)options
+           resolve:(RCTPromiseResolveBlock)resolve
+            reject:(RCTPromiseRejectBlock)reject {
+    [VisionUtilsBridge detectBlur:source
+                          options:options
+                          resolve:^(NSDictionary *result) {
+        resolve(result);
+    } reject:^(NSString *code, NSString *message) {
+        reject(code, message, nil);
+    }];
+}
+
 // MARK: - TurboModule
 
 - (std::shared_ptr<facebook::react::TurboModule>)getTurboModule:
