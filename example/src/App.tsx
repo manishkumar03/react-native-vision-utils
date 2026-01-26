@@ -1325,16 +1325,14 @@ const App: React.FC = () => {
           count: 5, // Extract 5 evenly-spaced frames
           resize: { width: 224, height: 224 },
           outputFormat: 'base64',
-          quality: 0.7,
+          quality: 70, // JPEG quality 0-100
         }
       );
 
       // Show first frame as processed image if available
-      if (result.frames.length > 0 && result.frames[0]!.data) {
+      if (result.frames.length > 0 && result.frames[0]!.base64) {
         const firstFrame = result.frames[0]!;
-        if (typeof firstFrame.data === 'string') {
-          setProcessedImageUri(`data:image/jpeg;base64,${firstFrame.data}`);
-        }
+        setProcessedImageUri(`data:image/jpeg;base64,${firstFrame.base64}`);
       }
 
       Alert.alert(

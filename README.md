@@ -346,19 +346,23 @@ result.frames.forEach((frame) => {
 
 **Options:**
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `timestamps` | number[] | Specific timestamps in seconds to extract frames |
-| `interval` | number | Extract frames at regular intervals (seconds) |
-| `count` | number | Number of evenly-spaced frames to extract |
-| `startTime` | number | Start time in seconds (for interval mode) |
-| `endTime` | number | End time in seconds (for interval mode) |
-| `maxFrames` | number | Maximum number of frames to extract |
-| `resize` | object | Resize frames to { width, height } |
-| `outputFormat` | string | 'base64' (default) or 'pixelData' for ML arrays |
-| `quality` | number | JPEG quality for base64 output (0-1) |
-| `colorFormat` | string | Color format for pixelData ('rgb', 'rgba', etc.) |
-| `normalization` | object | Normalization preset for pixelData |
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `timestamps` | number[] | - | Specific timestamps in seconds to extract frames |
+| `interval` | number | - | Extract frames at regular intervals (seconds) |
+| `count` | number | - | Number of evenly-spaced frames to extract |
+| `startTime` | number | 0 | Start time in seconds (for interval/count modes) |
+| `endTime` | number | duration | End time in seconds (for interval/count modes) |
+| `maxFrames` | number | 100 | Maximum frames for interval mode |
+| `resize` | object | - | Resize frames to { width, height } |
+| `outputFormat` | string | 'base64' | 'base64' or 'pixelData' for ML arrays |
+| `quality` | number | 90 | JPEG quality for base64 output (0-100) |
+| `colorFormat` | string | 'rgb' | Color format for pixelData ('rgb', 'rgba', 'bgr', 'grayscale') |
+| `normalization` | object | scale | Normalization preset for pixelData ('scale', 'imagenet', 'tensorflow') |
+
+> **Note:** If no extraction mode is specified (no `timestamps`, `interval`, or `count`), a single frame at t=0 is extracted by default.
+
+> **Platform Note:** The `asset` source type is only supported on iOS. Android supports `file` and `url` sources.
 
 **Result:**
 
@@ -369,16 +373,20 @@ result.frames.forEach((frame) => {
 | `videoDuration` | number | Total video duration in seconds |
 | `videoWidth` | number | Video width in pixels |
 | `videoHeight` | number | Video height in pixels |
+| `frameRate` | number | Video frame rate (fps) |
 | `processingTimeMs` | number | Processing time in milliseconds |
 
 **ExtractedFrame:**
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `timestamp` | number | Frame timestamp in seconds |
+| `timestamp` | number | Actual frame timestamp in seconds |
+| `requestedTimestamp` | number | Originally requested timestamp |
 | `width` | number | Frame width |
 | `height` | number | Frame height |
-| `data` | string \| number[] | Base64 string or pixel array |
+| `data` | string \| number[] | Base64 string (when outputFormat='base64') or pixel array (when outputFormat='pixelData') |
+| `channels` | number | Number of channels (only present when outputFormat='pixelData') |
+| `error` | string | Error message if frame extraction failed (frame may still be present with partial data) |
 
 ### Image Augmentation
 
