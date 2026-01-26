@@ -773,6 +773,7 @@ public class VisionUtilsBridge: NSObject {
         resolve: @escaping (NSDictionary) -> Void,
         reject: @escaping (String, String) -> Void
     ) {
+        let startTime = CFAbsoluteTimeGetCurrent()
         do {
             guard let boxesArray = boxes as? [[NSNumber]] else {
                 reject("INVALID_INPUT", "Boxes must be array of arrays")
@@ -786,7 +787,11 @@ public class VisionUtilsBridge: NSObject {
                 targetFormat: targetFormat
             )
 
-            resolve(["boxes": result] as NSDictionary)
+            let processingTimeMs = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
+            resolve([
+                "boxes": result,
+                "processingTimeMs": processingTimeMs
+            ] as NSDictionary)
         } catch {
             reject("BOX_ERROR", error.localizedDescription)
         }
@@ -799,6 +804,7 @@ public class VisionUtilsBridge: NSObject {
         resolve: @escaping (NSDictionary) -> Void,
         reject: @escaping (String, String) -> Void
     ) {
+        let startTime = CFAbsoluteTimeGetCurrent()
         do {
             guard let boxesArray = boxes as? [[NSNumber]] else {
                 reject("INVALID_INPUT", "Boxes must be array of arrays")
@@ -824,7 +830,11 @@ public class VisionUtilsBridge: NSObject {
                 clip: clip
             )
 
-            resolve(["boxes": result] as NSDictionary)
+            let processingTimeMs = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
+            resolve([
+                "boxes": result,
+                "processingTimeMs": processingTimeMs
+            ] as NSDictionary)
         } catch {
             reject("BOX_ERROR", error.localizedDescription)
         }
@@ -839,6 +849,7 @@ public class VisionUtilsBridge: NSObject {
         resolve: @escaping (NSDictionary) -> Void,
         reject: @escaping (String, String) -> Void
     ) {
+        let startTime = CFAbsoluteTimeGetCurrent()
         do {
             guard let boxesArray = boxes as? [[NSNumber]] else {
                 reject("INVALID_INPUT", "Boxes must be array of arrays")
@@ -853,7 +864,11 @@ public class VisionUtilsBridge: NSObject {
                 format: format
             )
 
-            resolve(["boxes": result] as NSDictionary)
+            let processingTimeMs = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
+            resolve([
+                "boxes": result,
+                "processingTimeMs": processingTimeMs
+            ] as NSDictionary)
         } catch {
             reject("BOX_ERROR", error.localizedDescription)
         }
@@ -894,6 +909,7 @@ public class VisionUtilsBridge: NSObject {
         resolve: @escaping (NSDictionary) -> Void,
         reject: @escaping (String, String) -> Void
     ) {
+        let startTime = CFAbsoluteTimeGetCurrent()
         do {
             guard let boxesArray = boxes as? [[NSNumber]],
                   let scoresArray = scores as? [NSNumber] else {
@@ -910,7 +926,7 @@ public class VisionUtilsBridge: NSObject {
             let doubleBoxes = boxesArray.map { $0.map { $0.doubleValue } }
             let doubleScores = scoresArray.map { $0.doubleValue }
 
-            let result = try BoundingBoxUtils.nonMaxSuppression(
+            var result = try BoundingBoxUtils.nonMaxSuppression(
                 boxes: doubleBoxes,
                 scores: doubleScores,
                 iouThreshold: iouThreshold,
@@ -919,6 +935,8 @@ public class VisionUtilsBridge: NSObject {
                 format: format
             )
 
+            let processingTimeMs = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
+            result["processingTimeMs"] = processingTimeMs
             resolve(result as NSDictionary)
         } catch {
             reject("NMS_ERROR", error.localizedDescription)

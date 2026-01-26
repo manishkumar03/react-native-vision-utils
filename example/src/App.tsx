@@ -1043,11 +1043,19 @@ const App: React.FC = () => {
         .map((b) => `[${b.map((v) => Number(v).toFixed(0)).join(', ')}]`)
         .join('\n');
 
+      // Show more precision for fast operations
+      const timeStr =
+        result.processingTimeMs != null
+          ? result.processingTimeMs < 0.01
+            ? `${(result.processingTimeMs * 1000).toFixed(2)}µs`
+            : `${Number(result.processingTimeMs).toFixed(2)}ms`
+          : 'N/A';
+
       Alert.alert(
         'Reverse Letterbox',
         `Boxes in 640x640 space:\n${letterboxStr}\n\n` +
           `Boxes in original space:\n${originalStr}\n\n` +
-          `Time: ${Number(result.processingTimeMs).toFixed(2)}ms`
+          `Time: ${timeStr}`
       );
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
