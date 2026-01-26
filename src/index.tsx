@@ -35,6 +35,14 @@ import {
   type OutputTarget,
   type ModelPreset,
   type AugmentationOptions,
+  type QuantizeOptions,
+  type QuantizeResult,
+  type DequantizeOptions,
+  type DequantizeResult,
+  type CalculateQuantizationParamsOptions,
+  type QuantizationParams,
+  type QuantizationDtype,
+  type QuantizationMode,
 } from './types';
 
 // Re-export all types
@@ -1246,6 +1254,236 @@ export async function applyAugmentations(
       source as unknown as Object,
       augmentations as unknown as Object
     )) as { base64: string; processingTimeMs: number };
+    return result;
+  } catch (error) {
+    throw VisionUtilsException.fromNativeError(error);
+  }
+}
+
+// =============================================================================
+// Quantization API
+// =============================================================================
+
+/**
+ * Quantize floating-point pixel data to integer format for ML inference
+ *
+ * Supports per-tensor and per-channel quantization with int8, uint8, or int16 output.
+ * Per-channel quantization is common in TFLite models for better accuracy.
+ *
+ * @param data Float pixel data (normalized values, typically [0, 1] or [-1, 1])
+ * @param options Quantization options including scale, zeroPoint, and dtype
+ * @returns Promise resolving to QuantizeResult with typed array
+ *
+ * @example
+ * // Per-tensor int8 quantization (TFLite style)
+ * const pixelData = await getPixelData({
+ *   source: { type: 'url', value: imageUrl },
+ *   normalization: { preset: 'scale' } // [0, 1]
+ * });
+ *
+ * const quantized = await quantize(Array.from(pixelData.data), {
+ *   dtype: 'int8',
+ *   mode: 'per-tensor',
+ *   scale: 0.00784,    // 1/127.5 for [-1, 1] to [-128, 127]
+ *   zeroPoint: 0
+ * });
+ *
+ * @example
+ * // Per-channel uint8 quantization
+ * const quantized = await quantize(Array.from(pixelData.data), {
+ *   dtype: 'uint8',
+ *   mode: 'per-channel',
+ *   scale: [0.0039, 0.0039, 0.0039],    // 1/255 per channel
+ *   zeroPoint: [0, 0, 0],
+ *   channels: 3,
+ *   dataLayout: 'hwc'
+ * });
+ */
+export async function quantize(
+  data: number[] | Float32Array,
+  options: QuantizeOptions
+): Promise<QuantizeResult> {
+  try {
+    // Validate options
+    if (options.scale === undefined || options.zeroPoint === undefined) {
+      throw new VisionUtilsException(
+        'INVALID_OPTIONS',
+        'scale and zeroPoint are required for quantization'
+      );
+    }
+
+    const mode = options.mode ?? 'per-tensor';
+    const dtype = options.dtype ?? 'int8';
+
+    // Validate per-channel requirements
+    if (mode === 'per-channel') {
+      if (!Array.isArray(options.scale) || !Array.isArray(options.zeroPoint)) {
+        throw new VisionUtilsException(
+          'INVALID_OPTIONS',
+          'Per-channel mode requires scale and zeroPoint to be arrays'
+        );
+      }
+      if (!options.channels) {
+        throw new VisionUtilsException(
+          'INVALID_OPTIONS',
+          'Per-channel mode requires channels to be specified'
+        );
+      }
+    }
+
+    const dataArray = data instanceof Float32Array ? Array.from(data) : data;
+
+    const result = (await VisionUtils.quantize(dataArray, {
+      dtype,
+      mode,
+      scale: options.scale,
+      zeroPoint: options.zeroPoint,
+      dataLayout: options.dataLayout ?? 'hwc',
+      channels: options.channels ?? 3,
+      width: options.width,
+      height: options.height,
+    })) as {
+      data: number[];
+      dtype: QuantizationDtype;
+      mode: QuantizationMode;
+      scale: number | number[];
+      zeroPoint: number | number[];
+      processingTimeMs: number;
+    };
+
+    // Convert to appropriate typed array
+    let typedData: Int8Array | Uint8Array | Int16Array;
+    switch (result.dtype) {
+      case 'int8':
+        typedData = new Int8Array(result.data);
+        break;
+      case 'uint8':
+        typedData = new Uint8Array(result.data);
+        break;
+      case 'int16':
+        typedData = new Int16Array(result.data);
+        break;
+      default:
+        typedData = new Int8Array(result.data);
+    }
+
+    return {
+      data: typedData,
+      dtype: result.dtype,
+      mode: result.mode,
+      scale: result.scale,
+      zeroPoint: result.zeroPoint,
+      processingTimeMs: result.processingTimeMs,
+    };
+  } catch (error) {
+    throw VisionUtilsException.fromNativeError(error);
+  }
+}
+
+/**
+ * Dequantize integer data back to floating-point
+ *
+ * Reverses the quantization process: float = (int - zeroPoint) * scale
+ *
+ * @param data Quantized integer data
+ * @param options Dequantization options (must match original quantization params)
+ * @returns Promise resolving to DequantizeResult with Float32Array
+ *
+ * @example
+ * // Dequantize after model inference
+ * const dequantized = await dequantize(modelOutput, {
+ *   dtype: 'int8',
+ *   scale: 0.00784,
+ *   zeroPoint: 0
+ * });
+ */
+export async function dequantize(
+  data: number[] | Int8Array | Uint8Array | Int16Array,
+  options: DequantizeOptions
+): Promise<DequantizeResult> {
+  try {
+    if (options.scale === undefined || options.zeroPoint === undefined) {
+      throw new VisionUtilsException(
+        'INVALID_OPTIONS',
+        'scale and zeroPoint are required for dequantization'
+      );
+    }
+
+    const dataArray = Array.isArray(data) ? data : Array.from(data);
+
+    const result = (await VisionUtils.dequantize(dataArray, {
+      dtype: options.dtype,
+      mode: options.mode ?? 'per-tensor',
+      scale: options.scale,
+      zeroPoint: options.zeroPoint,
+      dataLayout: options.dataLayout ?? 'hwc',
+      channels: options.channels ?? 3,
+      width: options.width,
+      height: options.height,
+    })) as {
+      data: number[];
+      processingTimeMs: number;
+    };
+
+    return {
+      data: new Float32Array(result.data),
+      processingTimeMs: result.processingTimeMs,
+    };
+  } catch (error) {
+    throw VisionUtilsException.fromNativeError(error);
+  }
+}
+
+/**
+ * Calculate optimal quantization parameters (scale and zeroPoint) from data
+ *
+ * Analyzes min/max values to determine the best quantization parameters.
+ * Useful when you don't have pre-determined quantization params from a model.
+ *
+ * @param data Float pixel data to analyze
+ * @param options Options for parameter calculation
+ * @returns Promise resolving to QuantizationParams
+ *
+ * @example
+ * // Calculate params for int8 quantization
+ * const params = await calculateQuantizationParams(Array.from(pixelData.data), {
+ *   dtype: 'int8',
+ *   symmetric: true  // Forces zeroPoint = 0
+ * });
+ *
+ * // Use calculated params for quantization
+ * const quantized = await quantize(data, {
+ *   dtype: 'int8',
+ *   scale: params.scale,
+ *   zeroPoint: params.zeroPoint
+ * });
+ *
+ * @example
+ * // Per-channel parameter calculation
+ * const params = await calculateQuantizationParams(Array.from(pixelData.data), {
+ *   dtype: 'uint8',
+ *   mode: 'per-channel',
+ *   channels: 3,
+ *   dataLayout: 'hwc'
+ * });
+ */
+export async function calculateQuantizationParams(
+  data: number[] | Float32Array,
+  options?: CalculateQuantizationParamsOptions
+): Promise<QuantizationParams> {
+  try {
+    const dataArray = data instanceof Float32Array ? Array.from(data) : data;
+
+    const result = (await VisionUtils.calculateQuantizationParams(dataArray, {
+      dtype: options?.dtype ?? 'int8',
+      mode: options?.mode ?? 'per-tensor',
+      channels: options?.channels ?? 3,
+      dataLayout: options?.dataLayout ?? 'hwc',
+      width: options?.width,
+      height: options?.height,
+      symmetric: options?.symmetric ?? false,
+    })) as QuantizationParams;
+
     return result;
   } catch (error) {
     throw VisionUtilsException.fromNativeError(error);

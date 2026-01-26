@@ -485,6 +485,90 @@ class VisionUtilsModule(reactContext: ReactApplicationContext) :
   }
 
   /**
+   * Quantize float data to integer format
+   */
+  override fun quantize(
+    data: ReadableArray,
+    options: ReadableMap,
+    promise: Promise
+  ) {
+    scope.launch {
+      try {
+        val floatData = FloatArray(data.size()) { data.getDouble(it).toFloat() }
+        val result = QuantizationAndroid.quantize(floatData, options)
+
+        withContext(Dispatchers.Main) {
+          promise.resolve(result)
+        }
+      } catch (e: VisionUtilsException) {
+        withContext(Dispatchers.Main) {
+          promise.reject(e.code, e.message)
+        }
+      } catch (e: Exception) {
+        withContext(Dispatchers.Main) {
+          promise.reject("UNKNOWN", e.message ?: "Unknown error occurred")
+        }
+      }
+    }
+  }
+
+  /**
+   * Dequantize integer data back to float
+   */
+  override fun dequantize(
+    data: ReadableArray,
+    options: ReadableMap,
+    promise: Promise
+  ) {
+    scope.launch {
+      try {
+        val intData = IntArray(data.size()) { data.getInt(it) }
+        val result = QuantizationAndroid.dequantize(intData, options)
+
+        withContext(Dispatchers.Main) {
+          promise.resolve(result)
+        }
+      } catch (e: VisionUtilsException) {
+        withContext(Dispatchers.Main) {
+          promise.reject(e.code, e.message)
+        }
+      } catch (e: Exception) {
+        withContext(Dispatchers.Main) {
+          promise.reject("UNKNOWN", e.message ?: "Unknown error occurred")
+        }
+      }
+    }
+  }
+
+  /**
+   * Calculate optimal quantization parameters from data
+   */
+  override fun calculateQuantizationParams(
+    data: ReadableArray,
+    options: ReadableMap,
+    promise: Promise
+  ) {
+    scope.launch {
+      try {
+        val floatData = FloatArray(data.size()) { data.getDouble(it).toFloat() }
+        val result = QuantizationAndroid.calculateQuantizationParams(floatData, options)
+
+        withContext(Dispatchers.Main) {
+          promise.resolve(result)
+        }
+      } catch (e: VisionUtilsException) {
+        withContext(Dispatchers.Main) {
+          promise.reject(e.code, e.message)
+        }
+      } catch (e: Exception) {
+        withContext(Dispatchers.Main) {
+          promise.reject("UNKNOWN", e.message ?: "Unknown error occurred")
+        }
+      }
+    }
+  }
+
+  /**
    * Clear cache
    */
   override fun clearCache(promise: Promise) {

@@ -486,6 +486,89 @@ public class VisionUtilsBridge: NSObject {
         }
     }
 
+    // MARK: - Quantization
+
+    @objc
+    public static func quantize(
+        _ data: NSArray,
+        options: NSDictionary,
+        resolve: @escaping (NSDictionary) -> Void,
+        reject: @escaping (String, String) -> Void
+    ) {
+        Task {
+            do {
+                guard let dataArray = data as? [NSNumber] else {
+                    reject("INVALID_DATA", "Invalid data format")
+                    return
+                }
+
+                let floatData = dataArray.map { $0.floatValue }
+                let optionsDict = options as? [String: Any] ?? [:]
+                let result = try Quantization.quantize(data: floatData, options: optionsDict)
+
+                resolve(result as NSDictionary)
+            } catch let error as VisionUtilsError {
+                reject(error.code, error.message)
+            } catch {
+                reject("UNKNOWN", error.localizedDescription)
+            }
+        }
+    }
+
+    @objc
+    public static func dequantize(
+        _ data: NSArray,
+        options: NSDictionary,
+        resolve: @escaping (NSDictionary) -> Void,
+        reject: @escaping (String, String) -> Void
+    ) {
+        Task {
+            do {
+                guard let dataArray = data as? [NSNumber] else {
+                    reject("INVALID_DATA", "Invalid data format")
+                    return
+                }
+
+                let intData = dataArray.map { $0.intValue }
+                let optionsDict = options as? [String: Any] ?? [:]
+                let result = try Quantization.dequantize(data: intData, options: optionsDict)
+
+                resolve(result as NSDictionary)
+            } catch let error as VisionUtilsError {
+                reject(error.code, error.message)
+            } catch {
+                reject("UNKNOWN", error.localizedDescription)
+            }
+        }
+    }
+
+    @objc
+    public static func calculateQuantizationParams(
+        _ data: NSArray,
+        options: NSDictionary,
+        resolve: @escaping (NSDictionary) -> Void,
+        reject: @escaping (String, String) -> Void
+    ) {
+        Task {
+            do {
+                guard let dataArray = data as? [NSNumber] else {
+                    reject("INVALID_DATA", "Invalid data format")
+                    return
+                }
+
+                let floatData = dataArray.map { $0.floatValue }
+                let optionsDict = options as? [String: Any] ?? [:]
+                let result = try Quantization.calculateQuantizationParams(data: floatData, options: optionsDict)
+
+                resolve(result as NSDictionary)
+            } catch let error as VisionUtilsError {
+                reject(error.code, error.message)
+            } catch {
+                reject("UNKNOWN", error.localizedDescription)
+            }
+        }
+    }
+
     // MARK: - Cache Management
 
     @objc

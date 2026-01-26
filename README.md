@@ -16,6 +16,7 @@ A high-performance React Native library for image preprocessing optimized for ML
 - 📈 **Image Analysis**: Statistics, metadata, validation
 - 🧮 **Tensor Operations**: Channel extraction, patch extraction, permutation, batch concatenation
 - 🔙 **Tensor to Image**: Convert processed tensors back to images
+- 🎯 **Native Quantization**: Float→Int8/Uint8/Int16 with per-tensor and per-channel support (TFLite compatible)
 
 ## Installation
 
@@ -448,6 +449,117 @@ console.log(stats.hitCount);
 console.log(stats.missCount);
 console.log(stats.size);
 console.log(stats.maxSize);
+```
+
+### Quantization (for TFLite and Other Quantized Models)
+
+Native high-performance quantization for deploying to quantized ML models like TFLite int8.
+
+#### `quantize(data, options)`
+
+Quantize float data to int8/uint8/int16 format.
+
+```typescript
+import { getPixelData, quantize, MODEL_PRESETS } from 'react-native-vision-utils';
+
+// Get float pixel data
+const result = await getPixelData({
+  source: { type: 'file', value: '/path/to/image.jpg' },
+  ...MODEL_PRESETS.mobilenet,
+});
+
+// Per-tensor quantization (single scale/zeroPoint)
+const quantized = await quantize(result.data, {
+  mode: 'per-tensor',
+  dtype: 'uint8',
+  scale: 0.0078125,      // From TFLite model
+  zeroPoint: 128,        // From TFLite model
+});
+
+console.log(quantized.data);      // Uint8Array
+console.log(quantized.scale);     // 0.0078125
+console.log(quantized.zeroPoint); // 128
+console.log(quantized.dtype);     // 'uint8'
+console.log(quantized.mode);      // 'per-tensor'
+```
+
+##### Per-Channel Quantization
+
+For models with per-channel quantization (common in TFLite):
+
+```typescript
+// Per-channel quantization (different scale/zeroPoint per channel)
+const quantized = await quantize(result.data, {
+  mode: 'per-channel',
+  dtype: 'int8',
+  scale: [0.0123, 0.0156, 0.0189],        // Per-channel scales
+  zeroPoint: [0, 0, 0],                    // Per-channel zero points
+  channels: 3,
+  dataLayout: 'chw',                       // Specify layout for per-channel
+});
+```
+
+##### Automatic Parameter Calculation
+
+Calculate optimal quantization parameters from your data:
+
+```typescript
+import { calculateQuantizationParams, quantize } from 'react-native-vision-utils';
+
+// Calculate optimal params for your data range
+const params = await calculateQuantizationParams(result.data, {
+  mode: 'per-tensor',
+  dtype: 'uint8',
+});
+
+console.log(params.scale);     // Calculated scale
+console.log(params.zeroPoint); // Calculated zero point
+console.log(params.min);       // Data min value
+console.log(params.max);       // Data max value
+
+// Use calculated params for quantization
+const quantized = await quantize(result.data, {
+  mode: 'per-tensor',
+  dtype: 'uint8',
+  scale: params.scale as number,
+  zeroPoint: params.zeroPoint as number,
+});
+```
+
+#### `dequantize(data, options)`
+
+Convert quantized data back to float32.
+
+```typescript
+import { dequantize } from 'react-native-vision-utils';
+
+// Dequantize int8 data back to float
+const dequantized = await dequantize(quantized.data, {
+  mode: 'per-tensor',
+  dtype: 'int8',
+  scale: 0.0078125,
+  zeroPoint: 0,
+});
+
+console.log(dequantized.data); // Float32Array
+```
+
+##### Quantization Options
+
+| Property     | Type                       | Required | Description                                |
+| ------------ | -------------------------- | -------- | ------------------------------------------ |
+| `mode`       | `'per-tensor' \| 'per-channel'` | Yes | Quantization mode                          |
+| `dtype`      | `'int8' \| 'uint8' \| 'int16'`  | Yes | Output data type                           |
+| `scale`      | `number \| number[]`       | Yes      | Scale factor(s) - array for per-channel    |
+| `zeroPoint`  | `number \| number[]`       | Yes      | Zero point(s) - array for per-channel      |
+| `channels`   | `number`                   | Per-channel | Number of channels (required for per-channel) |
+| `dataLayout` | `'hwc' \| 'chw'`           | Per-channel | Data layout (default: 'hwc')               |
+
+##### Quantization Formulas
+
+```
+Quantize:   q = round(value / scale + zeroPoint)
+Dequantize: value = (q - zeroPoint) * scale
 ```
 
 ## Type Reference

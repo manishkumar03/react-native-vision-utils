@@ -16,6 +16,9 @@ const mockPermute = jest.fn();
 const mockApplyAugmentations = jest.fn();
 const mockClearCache = jest.fn();
 const mockGetCacheStats = jest.fn();
+const mockQuantize = jest.fn();
+const mockDequantize = jest.fn();
+const mockCalculateQuantizationParams = jest.fn();
 
 NativeModules.VisionUtils = {
   getPixelData: mockGetPixelData,
@@ -33,6 +36,9 @@ NativeModules.VisionUtils = {
   applyAugmentations: mockApplyAugmentations,
   clearCache: mockClearCache,
   getCacheStats: mockGetCacheStats,
+  quantize: mockQuantize,
+  dequantize: mockDequantize,
+  calculateQuantizationParams: mockCalculateQuantizationParams,
 };
 
 export {
@@ -51,4 +57,7 @@ export {
   mockApplyAugmentations,
   mockClearCache,
   mockGetCacheStats,
+  mockQuantize,
+  mockDequantize,
+  mockCalculateQuantizationParams,
 };

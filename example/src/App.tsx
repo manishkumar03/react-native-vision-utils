@@ -23,6 +23,9 @@ import {
   fiveCrop,
   clearCache,
   getCacheStats,
+  quantize,
+  dequantize,
+  calculateQuantizationParams,
   type PixelDataResult,
   type ColorFormat,
   type DataLayout,
@@ -440,6 +443,170 @@ const App: React.FC = () => {
     }
   }, [currentImage]);
 
+  // Test quantization (per-tensor uint8)
+  const testQuantization = useCallback(async () => {
+    setLoading(true);
+    try {
+      // Get normalized float pixel data
+      const pixelData = await getPixelData({
+        source: { type: 'url', value: currentImage },
+        colorFormat: 'rgb',
+        resize: { width: 224, height: 224, strategy: 'cover' },
+        normalization: { preset: 'scale' }, // 0-1 range
+        dataLayout: 'hwc',
+      });
+
+      // Calculate optimal quantization params
+      const params = await calculateQuantizationParams(
+        Array.from(pixelData.data),
+        {
+          mode: 'per-tensor',
+          dtype: 'uint8',
+        }
+      );
+
+      // Quantize to uint8
+      const quantized = await quantize(Array.from(pixelData.data), {
+        mode: 'per-tensor',
+        dtype: 'uint8',
+        scale: params.scale as number,
+        zeroPoint: params.zeroPoint as number,
+      });
+
+      // Sample some quantized values
+      const sampleValues = Array.from(quantized.data.slice(0, 5));
+      const minVal = Array.isArray(params.min) ? params.min[0] : params.min;
+      const maxVal = Array.isArray(params.max) ? params.max[0] : params.max;
+
+      Alert.alert(
+        'Quantization (Per-Tensor)',
+        `Input: ${pixelData.data.length} float32 values\n` +
+          `Output: ${quantized.data.length} uint8 values\n` +
+          `Scale: ${(params.scale as number).toFixed(6)}\n` +
+          `ZeroPoint: ${params.zeroPoint}\n` +
+          `Sample values: [${sampleValues.join(', ')}]\n` +
+          `Data range: [${minVal?.toFixed(3)}, ${maxVal?.toFixed(3)}]`
+      );
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      Alert.alert('Error', errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentImage]);
+
+  // Test per-channel quantization (int8)
+  const testPerChannelQuantization = useCallback(async () => {
+    setLoading(true);
+    try {
+      // Get normalized float pixel data in CHW layout
+      const pixelData = await getPixelData({
+        source: { type: 'url', value: currentImage },
+        colorFormat: 'rgb',
+        resize: { width: 224, height: 224, strategy: 'cover' },
+        normalization: { preset: 'imagenet' }, // ImageNet normalization
+        dataLayout: 'chw', // CHW for per-channel
+      });
+
+      // Calculate per-channel quantization params
+      const params = await calculateQuantizationParams(
+        Array.from(pixelData.data),
+        {
+          mode: 'per-channel',
+          dtype: 'int8',
+          channels: 3,
+          dataLayout: 'chw',
+        }
+      );
+
+      // Quantize with per-channel params
+      const quantized = await quantize(Array.from(pixelData.data), {
+        mode: 'per-channel',
+        dtype: 'int8',
+        scale: params.scale as number[],
+        zeroPoint: params.zeroPoint as number[],
+        channels: 3,
+        dataLayout: 'chw',
+      });
+
+      const scales = (params.scale as number[]).map((s) => s.toFixed(4));
+
+      Alert.alert(
+        'Quantization (Per-Channel)',
+        `Mode: per-channel int8\n` +
+          `Channels: 3 (RGB)\n` +
+          `Per-channel scales: [${scales.join(', ')}]\n` +
+          `Per-channel zeroPoints: [${(params.zeroPoint as number[]).join(
+            ', '
+          )}]\n` +
+          `Output: ${quantized.data.length} int8 values`
+      );
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      Alert.alert('Error', errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentImage]);
+
+  // Test dequantization roundtrip
+  const testDequantization = useCallback(async () => {
+    setLoading(true);
+    try {
+      // Get normalized float pixel data
+      const pixelData = await getPixelData({
+        source: { type: 'url', value: currentImage },
+        colorFormat: 'rgb',
+        resize: { width: 224, height: 224, strategy: 'cover' },
+        normalization: { preset: 'scale' },
+        dataLayout: 'hwc',
+      });
+
+      const originalData = Array.from(pixelData.data);
+      const originalSample = originalData.slice(0, 3).map((v) => v.toFixed(4));
+
+      // Quantize
+      const quantized = await quantize(originalData, {
+        mode: 'per-tensor',
+        dtype: 'uint8',
+        scale: 0.00392157, // 1/255
+        zeroPoint: 0,
+      });
+
+      // Dequantize back to float
+      const dequantized = await dequantize(Array.from(quantized.data), {
+        mode: 'per-tensor',
+        dtype: 'uint8',
+        scale: 0.00392157,
+        zeroPoint: 0,
+      });
+
+      const dequantizedSample = Array.from(dequantized.data.slice(0, 3)).map(
+        (v) => v.toFixed(4)
+      );
+
+      // Calculate error
+      let totalError = 0;
+      for (let i = 0; i < Math.min(1000, originalData.length); i++) {
+        totalError += Math.abs(originalData[i]! - dequantized.data[i]!);
+      }
+      const avgError = totalError / Math.min(1000, originalData.length);
+
+      Alert.alert(
+        'Dequantization Roundtrip',
+        `Original (first 3): [${originalSample.join(', ')}]\n` +
+          `Dequantized (first 3): [${dequantizedSample.join(', ')}]\n` +
+          `Avg reconstruction error: ${avgError.toFixed(6)}\n` +
+          `(Lower is better, ~0.002 expected for uint8)`
+      );
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      Alert.alert('Error', errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentImage]);
+
   // Test tensor to image conversion
   const testTensorToImage = useCallback(async () => {
     setLoading(true);
@@ -695,6 +862,46 @@ const App: React.FC = () => {
           </TouchableOpacity>
         </View>
 
+        {/* Quantization */}
+        <Text style={styles.sectionTitle}>🎯 Quantization (TFLite)</Text>
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity
+            style={[
+              styles.button,
+              styles.quantizeButton,
+              loading && styles.buttonDisabled,
+            ]}
+            onPress={testQuantization}
+            disabled={loading}
+          >
+            <Text style={styles.buttonText}>Per-Tensor (uint8)</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.button,
+              styles.quantizeButton,
+              loading && styles.buttonDisabled,
+            ]}
+            onPress={testPerChannelQuantization}
+            disabled={loading}
+          >
+            <Text style={styles.buttonText}>Per-Channel (int8)</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.button,
+              styles.quantizeButton,
+              loading && styles.buttonDisabled,
+            ]}
+            onPress={testDequantization}
+            disabled={loading}
+          >
+            <Text style={styles.buttonText}>Dequantize Roundtrip</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Cache Management */}
         <Text style={styles.sectionTitle}>💾 Cache Management</Text>
         <View style={styles.buttonContainer}>
@@ -828,6 +1035,9 @@ const styles = StyleSheet.create({
   },
   tensorButton: {
     backgroundColor: '#AF52DE',
+  },
+  quantizeButton: {
+    backgroundColor: '#FF2D55',
   },
   cacheButton: {
     backgroundColor: '#5AC8FA',

@@ -201,6 +201,47 @@
     }];
 }
 
+// MARK: - Quantization
+
+- (void)quantize:(NSArray *)data
+         options:(NSDictionary *)options
+         resolve:(RCTPromiseResolveBlock)resolve
+          reject:(RCTPromiseRejectBlock)reject {
+    [VisionUtilsBridge quantize:data
+                        options:options
+                        resolve:^(NSDictionary *result) {
+        resolve(result);
+    } reject:^(NSString *code, NSString *message) {
+        reject(code, message, nil);
+    }];
+}
+
+- (void)dequantize:(NSArray *)data
+           options:(NSDictionary *)options
+           resolve:(RCTPromiseResolveBlock)resolve
+            reject:(RCTPromiseRejectBlock)reject {
+    [VisionUtilsBridge dequantize:data
+                          options:options
+                          resolve:^(NSDictionary *result) {
+        resolve(result);
+    } reject:^(NSString *code, NSString *message) {
+        reject(code, message, nil);
+    }];
+}
+
+- (void)calculateQuantizationParams:(NSArray *)data
+                            options:(NSDictionary *)options
+                            resolve:(RCTPromiseResolveBlock)resolve
+                             reject:(RCTPromiseRejectBlock)reject {
+    [VisionUtilsBridge calculateQuantizationParams:data
+                                           options:options
+                                           resolve:^(NSDictionary *result) {
+        resolve(result);
+    } reject:^(NSString *code, NSString *message) {
+        reject(code, message, nil);
+    }];
+}
+
 // MARK: - Cache Management
 
 - (void)clearCache:(RCTPromiseResolveBlock)resolve

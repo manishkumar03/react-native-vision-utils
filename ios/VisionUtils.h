@@ -83,6 +83,22 @@
                    resolve:(RCTPromiseResolveBlock)resolve
                     reject:(RCTPromiseRejectBlock)reject;
 
+// Quantization
+- (void)quantize:(NSArray *)data
+         options:(NSDictionary *)options
+         resolve:(RCTPromiseResolveBlock)resolve
+          reject:(RCTPromiseRejectBlock)reject;
+
+- (void)dequantize:(NSArray *)data
+           options:(NSDictionary *)options
+           resolve:(RCTPromiseResolveBlock)resolve
+            reject:(RCTPromiseRejectBlock)reject;
+
+- (void)calculateQuantizationParams:(NSArray *)data
+                            options:(NSDictionary *)options
+                            resolve:(RCTPromiseResolveBlock)resolve
+                             reject:(RCTPromiseRejectBlock)reject;
+
 // Cache management
 - (void)clearCache:(RCTPromiseResolveBlock)resolve
             reject:(RCTPromiseRejectBlock)reject;

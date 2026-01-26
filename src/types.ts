@@ -213,6 +213,157 @@ export interface QuantizationOptions {
 }
 
 // =============================================================================
+// Advanced Quantization Types (for dedicated quantize function)
+// =============================================================================
+
+/**
+ * Quantization mode
+ * - 'per-tensor': Single scale/zeroPoint for entire tensor
+ * - 'per-channel': Different scale/zeroPoint for each channel
+ */
+export type QuantizationMode = 'per-tensor' | 'per-channel';
+
+/**
+ * Output data type for quantization
+ * - 'int8': Signed 8-bit integer [-128, 127]
+ * - 'uint8': Unsigned 8-bit integer [0, 255]
+ * - 'int16': Signed 16-bit integer [-32768, 32767]
+ */
+export type QuantizationDtype = 'int8' | 'uint8' | 'int16';
+
+/**
+ * Options for the dedicated quantize function
+ *
+ * @example
+ * // Per-tensor quantization (TFLite style)
+ * {
+ *   dtype: 'int8',
+ *   mode: 'per-tensor',
+ *   scale: 0.00784,
+ *   zeroPoint: 0
+ * }
+ *
+ * @example
+ * // Per-channel quantization (for RGB channels)
+ * {
+ *   dtype: 'uint8',
+ *   mode: 'per-channel',
+ *   scale: [0.00784, 0.00784, 0.00784],
+ *   zeroPoint: [128, 128, 128]
+ * }
+ */
+export interface QuantizeOptions {
+  /** Output data type (default: 'int8') */
+  dtype?: QuantizationDtype;
+  /** Quantization mode (default: 'per-tensor') */
+  mode?: QuantizationMode;
+  /**
+   * Scale factor(s) for quantization
+   * - For 'per-tensor': single number
+   * - For 'per-channel': array of numbers (one per channel)
+   */
+  scale: number | number[];
+  /**
+   * Zero point(s) for quantization
+   * - For 'per-tensor': single number
+   * - For 'per-channel': array of numbers (one per channel)
+   */
+  zeroPoint: number | number[];
+  /** Data layout of input (needed for per-channel mode, default: 'hwc') */
+  dataLayout?: DataLayout;
+  /** Number of channels in input data (required for per-channel mode) */
+  channels?: number;
+  /** Image width (required for per-channel mode with CHW layout) */
+  width?: number;
+  /** Image height (required for per-channel mode with CHW layout) */
+  height?: number;
+}
+
+/**
+ * Result from the quantize function
+ */
+export interface QuantizeResult {
+  /** Quantized data as typed array */
+  data: Int8Array | Uint8Array | Int16Array;
+  /** Output data type */
+  dtype: QuantizationDtype;
+  /** Quantization mode used */
+  mode: QuantizationMode;
+  /** Scale factor(s) used */
+  scale: number | number[];
+  /** Zero point(s) used */
+  zeroPoint: number | number[];
+  /** Processing time in milliseconds */
+  processingTimeMs: number;
+}
+
+/**
+ * Options for dequantization (inverse of quantize)
+ */
+export interface DequantizeOptions {
+  /** Input data type */
+  dtype: QuantizationDtype;
+  /** Quantization mode used for original quantization */
+  mode?: QuantizationMode;
+  /** Scale factor(s) used for original quantization */
+  scale: number | number[];
+  /** Zero point(s) used for original quantization */
+  zeroPoint: number | number[];
+  /** Data layout (needed for per-channel mode) */
+  dataLayout?: DataLayout;
+  /** Number of channels (required for per-channel mode) */
+  channels?: number;
+  /** Image width (required for per-channel mode with CHW layout) */
+  width?: number;
+  /** Image height (required for per-channel mode with CHW layout) */
+  height?: number;
+}
+
+/**
+ * Result from the dequantize function
+ */
+export interface DequantizeResult {
+  /** Dequantized data as Float32Array */
+  data: Float32Array;
+  /** Processing time in milliseconds */
+  processingTimeMs: number;
+}
+
+/**
+ * Options for calculating quantization parameters from data
+ */
+export interface CalculateQuantizationParamsOptions {
+  /** Target data type */
+  dtype?: QuantizationDtype;
+  /** Quantization mode */
+  mode?: QuantizationMode;
+  /** Number of channels (for per-channel mode) */
+  channels?: number;
+  /** Data layout (for per-channel mode) */
+  dataLayout?: DataLayout;
+  /** Image width (for per-channel mode) */
+  width?: number;
+  /** Image height (for per-channel mode) */
+  height?: number;
+  /** Use symmetric quantization (zeroPoint = 0 for int8) */
+  symmetric?: boolean;
+}
+
+/**
+ * Result from calculateQuantizationParams
+ */
+export interface QuantizationParams {
+  /** Calculated scale(s) */
+  scale: number | number[];
+  /** Calculated zero point(s) */
+  zeroPoint: number | number[];
+  /** Min value(s) found in data */
+  min: number | number[];
+  /** Max value(s) found in data */
+  max: number | number[];
+}
+
+// =============================================================================
 // Image Augmentation Types
 // =============================================================================
 

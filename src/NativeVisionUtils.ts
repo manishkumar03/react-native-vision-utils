@@ -151,6 +151,30 @@ export interface Spec extends TurboModule {
   applyAugmentations(source: Object, augmentations: Object): Promise<Object>;
 
   /**
+   * Quantize float data to int8/uint8/int16
+   * @param data - Float pixel data as number array
+   * @param options - QuantizeOptions serialized as Object
+   * @returns Promise resolving to QuantizeResult as Object
+   */
+  quantize(data: number[], options: Object): Promise<Object>;
+
+  /**
+   * Dequantize int8/uint8/int16 data back to float
+   * @param data - Quantized data as number array
+   * @param options - DequantizeOptions serialized as Object
+   * @returns Promise resolving to DequantizeResult as Object
+   */
+  dequantize(data: number[], options: Object): Promise<Object>;
+
+  /**
+   * Calculate optimal quantization parameters from data
+   * @param data - Float pixel data as number array
+   * @param options - CalculateQuantizationParamsOptions serialized as Object
+   * @returns Promise resolving to QuantizationParams as Object
+   */
+  calculateQuantizationParams(data: number[], options: Object): Promise<Object>;
+
+  /**
    * Clear the pixel data cache
    */
   clearCache(): Promise<void>;
