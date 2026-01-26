@@ -240,12 +240,12 @@ const augmented = await applyAugmentations(
   { type: 'file', value: '/path/to/image.jpg' },
   {
     rotation: 15, // Degrees
-    flipHorizontal: true,
-    flipVertical: false,
+    horizontalFlip: true,
+    verticalFlip: false,
     brightness: 1.2, // 1.0 = no change
     contrast: 1.1, // 1.0 = no change
     saturation: 0.9, // 1.0 = no change
-    blur: 2.0, // Blur radius
+    blur: { type: 'gaussian', radius: 2 }, // Blur options
   }
 );
 

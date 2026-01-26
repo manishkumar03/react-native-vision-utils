@@ -298,7 +298,7 @@ struct VisionUtilsResult {
             "height": height,
             "channels": channels,
             "colorFormat": colorFormat.rawValue,
-            "dataLayout": layout.rawValue.uppercased(),
+            "dataLayout": layout.rawValue,
             "shape": shape,
             "processingTimeMs": processingTimeMs
         ]

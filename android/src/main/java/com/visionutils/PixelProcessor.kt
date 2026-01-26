@@ -73,6 +73,7 @@ object PixelProcessor {
             width = processedBitmap.width,
             height = processedBitmap.height,
             channels = options.colorFormat.channels,
+            colorFormat = options.colorFormat,
             dataLayout = options.dataLayout,
             shape = shape,
             processingTimeMs = processingTimeMs

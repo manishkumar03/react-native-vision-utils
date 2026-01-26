@@ -367,6 +367,7 @@ data class VisionUtilsResult(
     val width: Int,
     val height: Int,
     val channels: Int,
+    val colorFormat: ColorFormat,
     val dataLayout: DataLayout,
     val shape: IntArray,
     val processingTimeMs: Double
@@ -379,7 +380,8 @@ data class VisionUtilsResult(
         map.putInt("width", width)
         map.putInt("height", height)
         map.putInt("channels", channels)
-        map.putString("dataLayout", dataLayout.name)
+        map.putString("colorFormat", colorFormat.name.lowercase())
+        map.putString("dataLayout", dataLayout.name.lowercase())
         val shapeArray = Arguments.createArray()
         shape.forEach { shapeArray.pushInt(it) }
         map.putArray("shape", shapeArray)
@@ -395,6 +397,7 @@ data class VisionUtilsResult(
                width == other.width &&
                height == other.height &&
                channels == other.channels &&
+               colorFormat == other.colorFormat &&
                dataLayout == other.dataLayout &&
                shape.contentEquals(other.shape)
     }
@@ -404,6 +407,7 @@ data class VisionUtilsResult(
         result = 31 * result + width
         result = 31 * result + height
         result = 31 * result + channels
+        result = 31 * result + colorFormat.hashCode()
         result = 31 * result + dataLayout.hashCode()
         result = 31 * result + shape.contentHashCode()
         return result
