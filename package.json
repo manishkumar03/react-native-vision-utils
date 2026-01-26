@@ -129,6 +129,15 @@
     "modulePathIgnorePatterns": [
       "<rootDir>/example/node_modules",
       "<rootDir>/lib/"
+    ],
+    "setupFilesAfterEnv": [
+      "<rootDir>/src/__tests__/jest.setup.ts"
+    ],
+    "testPathIgnorePatterns": [
+      "<rootDir>/node_modules/",
+      "<rootDir>/example/",
+      "<rootDir>/lib/",
+      "<rootDir>/src/__tests__/jest.setup.ts"
     ]
   },
   "commitlint": {
