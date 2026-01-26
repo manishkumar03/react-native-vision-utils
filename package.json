@@ -1,6 +1,6 @@
 {
   "name": "react-native-vision-utils",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "High-performance image preprocessing library for React Native ML/AI pipelines. Native implementations for pixel extraction, tensor conversion, quantization, augmentation, and model-specific preprocessing (YOLO, MobileNet, etc.)",
   "main": "./lib/module/index.js",
   "types": "./lib/typescript/src/index.d.ts",
