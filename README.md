@@ -13,7 +13,7 @@ A high-performance React Native library for image preprocessing optimized for ML
 - 🖼️ **Multiple Sources**: URL, file, base64, assets, photo library
 - 🤖 **Model Presets**: Pre-configured settings for YOLO, MobileNet, EfficientNet, ResNet, ViT, CLIP, SAM, DINO, DETR
 - 🔄 **Image Augmentation**: Rotation, flip, brightness, contrast, saturation, blur
-- 📈 **Image Analysis**: Statistics, metadata, validation
+- 📈 **Image Analysis**: Statistics, metadata, validation, blur detection
 - 🧮 **Tensor Operations**: Channel extraction, patch extraction, permutation, batch concatenation
 - 🔙 **Tensor to Image**: Convert processed tensors back to images
 - 🎯 **Native Quantization**: Float→Int8/Uint8/Int16 with per-tensor and per-channel support (TFLite compatible)
@@ -236,6 +236,43 @@ if (validation.isValid) {
   console.log('Issues:', validation.issues);
 }
 ```
+
+#### `detectBlur(source, options?)`
+
+Detect if an image is blurry using Laplacian variance analysis.
+
+```typescript
+import { detectBlur } from 'react-native-vision-utils';
+
+const result = await detectBlur(
+  { type: 'file', value: '/path/to/photo.jpg' },
+  {
+    threshold: 100, // Higher = stricter blur detection
+    downsampleSize: 500, // Downsample for faster processing
+  }
+);
+
+console.log(result.isBlurry); // true if blurry
+console.log(result.score); // Laplacian variance score
+console.log(result.threshold); // Threshold used
+console.log(result.processingTimeMs); // Processing time
+```
+
+**Options:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `threshold` | number | 100 | Variance threshold - images with score below this are considered blurry |
+| `downsampleSize` | number | 500 | Max dimension for downsampling (improves performance on large images) |
+
+**Result:**
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `isBlurry` | boolean | Whether the image is considered blurry |
+| `score` | number | Laplacian variance score (higher = sharper) |
+| `threshold` | number | The threshold that was used |
+| `processingTimeMs` | number | Processing time in milliseconds |
 
 ### Image Augmentation
 

@@ -1,6 +1,5 @@
 import React, { useState, useCallback } from 'react';
 import {
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -11,6 +10,7 @@ import {
   Image,
   Dimensions,
 } from 'react-native';
+import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import {
   getPixelData,
   batchGetPixelData,
@@ -1315,485 +1315,487 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.title}>react-native-vision-utils</Text>
-        <Text style={styles.subtitle}>Example App</Text>
+    <SafeAreaProvider>
+      <SafeAreaView style={styles.container}>
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <Text style={styles.title}>react-native-vision-utils</Text>
+          <Text style={styles.subtitle}>Example App</Text>
 
-        {/* Image Preview Section */}
-        <TouchableOpacity onPress={cycleImage} activeOpacity={0.8}>
-          <View style={styles.imageContainer}>
-            <Image
-              source={{ uri: processedImageUri || currentImage }}
-              style={styles.previewImage}
-              resizeMode="contain"
-            />
-            <Text style={styles.imageHint}>
-              {processedImageUri
-                ? 'Processed Image'
-                : `Image ${currentImageIndex + 1}/${SAMPLE_IMAGES.length}`}
-              {'\n'}Tap to cycle images
-            </Text>
-          </View>
-        </TouchableOpacity>
-
-        {processedImageUri && (
-          <TouchableOpacity
-            style={[styles.button, styles.resetButton]}
-            onPress={() => setProcessedImageUri(null)}
-          >
-            <Text style={styles.buttonText}>Show Original</Text>
-          </TouchableOpacity>
-        )}
-
-        {loading && (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#007AFF" />
-            <Text style={styles.loadingText}>Processing...</Text>
-          </View>
-        )}
-
-        {/* Basic Operations */}
-        <Text style={styles.sectionTitle}>📊 Basic Operations</Text>
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled]}
-            onPress={testBasicRGB}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>Test Basic RGB</Text>
+          {/* Image Preview Section */}
+          <TouchableOpacity onPress={cycleImage} activeOpacity={0.8}>
+            <View style={styles.imageContainer}>
+              <Image
+                source={{ uri: processedImageUri || currentImage }}
+                style={styles.previewImage}
+                resizeMode="contain"
+              />
+              <Text style={styles.imageHint}>
+                {processedImageUri
+                  ? 'Processed Image'
+                  : `Image ${currentImageIndex + 1}/${SAMPLE_IMAGES.length}`}
+                {'\n'}Tap to cycle images
+              </Text>
+            </View>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled]}
-            onPress={testImageNet}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>Test ImageNet (PyTorch)</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled]}
-            onPress={testTensorFlow}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>Test TensorFlow</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled]}
-            onPress={testGrayscale}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>Test Grayscale</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled]}
-            onPress={testResizeStrategies}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>Test Resize Strategies</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.button,
-              styles.batchButton,
-              loading && styles.buttonDisabled,
-            ]}
-            onPress={testBatchProcessing}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>Test Batch Processing</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Image Analysis */}
-        <Text style={styles.sectionTitle}>🔍 Image Analysis</Text>
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={[
-              styles.button,
-              styles.analysisButton,
-              loading && styles.buttonDisabled,
-            ]}
-            onPress={testStatistics}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>Get Statistics</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.button,
-              styles.analysisButton,
-              loading && styles.buttonDisabled,
-            ]}
-            onPress={testImageMetadata}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>Get Metadata</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.button,
-              styles.analysisButton,
-              loading && styles.buttonDisabled,
-            ]}
-            onPress={testValidation}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>Validate Source</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.button,
-              styles.analysisButton,
-              loading && styles.buttonDisabled,
-            ]}
-            onPress={testBlurDetection}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>Detect Blur</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Augmentations & Transforms */}
-        <Text style={styles.sectionTitle}>🎨 Augmentations & Transforms</Text>
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={[
-              styles.button,
-              styles.augmentButton,
-              loading && styles.buttonDisabled,
-            ]}
-            onPress={testAugmentations}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>Apply Augmentations</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.button,
-              styles.augmentButton,
-              loading && styles.buttonDisabled,
-            ]}
-            onPress={testFiveCrop}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>Five Crop Extract</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.button,
-              styles.augmentButton,
-              loading && styles.buttonDisabled,
-            ]}
-            onPress={testTensorToImage}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>Tensor → Image</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Tensor Operations */}
-        <Text style={styles.sectionTitle}>🧮 Tensor Operations</Text>
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={[
-              styles.button,
-              styles.tensorButton,
-              loading && styles.buttonDisabled,
-            ]}
-            onPress={testExtractChannel}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>Extract Channel</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Quantization */}
-        <Text style={styles.sectionTitle}>🎯 Quantization (TFLite)</Text>
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={[
-              styles.button,
-              styles.quantizeButton,
-              loading && styles.buttonDisabled,
-            ]}
-            onPress={testQuantization}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>Per-Tensor (uint8)</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.button,
-              styles.quantizeButton,
-              loading && styles.buttonDisabled,
-            ]}
-            onPress={testPerChannelQuantization}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>Per-Channel (int8)</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.button,
-              styles.quantizeButton,
-              loading && styles.buttonDisabled,
-            ]}
-            onPress={testDequantization}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>Dequantize Roundtrip</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Label Database */}
-        <Text style={styles.sectionTitle}>🏷️ Label Database</Text>
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={[
-              styles.button,
-              styles.labelButton,
-              loading && styles.buttonDisabled,
-            ]}
-            onPress={testGetLabel}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>Get Single Label</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.button,
-              styles.labelButton,
-              loading && styles.buttonDisabled,
-            ]}
-            onPress={testTopLabels}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>Top Predictions</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.button,
-              styles.labelButton,
-              loading && styles.buttonDisabled,
-            ]}
-            onPress={testAvailableDatasets}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>Available Datasets</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Camera Frame Processing */}
-        <Text style={styles.sectionTitle}>📹 Camera Frame Utils</Text>
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={[
-              styles.button,
-              styles.cameraButton,
-              loading && styles.buttonDisabled,
-            ]}
-            onPress={testCameraFrameProcessing}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>Process Camera Frame</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Bounding Box Utilities */}
-        <Text style={styles.sectionTitle}>📦 Bounding Box Utilities</Text>
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={[
-              styles.button,
-              styles.boxButton,
-              loading && styles.buttonDisabled,
-            ]}
-            onPress={testBoxFormatConversion}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>Format Conversion</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.button,
-              styles.boxButton,
-              loading && styles.buttonDisabled,
-            ]}
-            onPress={testBoxScaling}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>Scale Boxes</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.button,
-              styles.boxButton,
-              loading && styles.buttonDisabled,
-            ]}
-            onPress={testClipBoxes}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>Clip Boxes</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.button,
-              styles.boxButton,
-              loading && styles.buttonDisabled,
-            ]}
-            onPress={testIoUCalculation}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>Calculate IoU</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.button,
-              styles.boxButton,
-              loading && styles.buttonDisabled,
-            ]}
-            onPress={testNMS}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>Non-Max Suppression</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Letterbox Padding */}
-        <Text style={styles.sectionTitle}>🖼️ Letterbox Padding</Text>
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={[
-              styles.button,
-              styles.letterboxButton,
-              loading && styles.buttonDisabled,
-            ]}
-            onPress={testLetterbox}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>Apply Letterbox</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.button,
-              styles.letterboxButton,
-              loading && styles.buttonDisabled,
-            ]}
-            onPress={testReverseLetterbox}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>Reverse Letterbox</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Drawing & Visualization */}
-        <Text style={styles.sectionTitle}>🎨 Drawing & Visualization</Text>
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={[
-              styles.button,
-              styles.drawButton,
-              loading && styles.buttonDisabled,
-            ]}
-            onPress={testDrawBoxes}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>Draw Boxes</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.button,
-              styles.drawButton,
-              loading && styles.buttonDisabled,
-            ]}
-            onPress={testDrawKeypoints}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>Draw Keypoints</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.button,
-              styles.drawButton,
-              loading && styles.buttonDisabled,
-            ]}
-            onPress={testHeatmapOverlay}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>Heatmap Overlay</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Cache Management */}
-        <Text style={styles.sectionTitle}>💾 Cache Management</Text>
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={[styles.button, styles.cacheButton]}
-            onPress={testCacheStats}
-          >
-            <Text style={styles.buttonText}>Cache Statistics</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.button, styles.clearButton]}
-            onPress={testClearCache}
-          >
-            <Text style={styles.buttonText}>Clear Cache</Text>
-          </TouchableOpacity>
-
-          {results.length > 0 && (
+          {processedImageUri && (
             <TouchableOpacity
-              style={[styles.button, styles.clearButton]}
-              onPress={clearResults}
+              style={[styles.button, styles.resetButton]}
+              onPress={() => setProcessedImageUri(null)}
             >
-              <Text style={styles.buttonText}>Clear Results</Text>
+              <Text style={styles.buttonText}>Show Original</Text>
             </TouchableOpacity>
           )}
-        </View>
 
-        {results.length > 0 && (
-          <View style={styles.resultsContainer}>
-            <Text style={styles.resultsTitle}>Results:</Text>
-            {results.map((item, index) => (
-              <View key={index} style={styles.resultItem}>
-                <Text style={styles.resultLabel}>{item.label}</Text>
-                {item.result ? (
-                  <Text style={styles.resultValue}>
-                    {item.result.width}x{item.result.height}x
-                    {item.result.channels} ({item.result.dataLayout}){'\n'}Time:{' '}
-                    {item.result.processingTimeMs.toFixed(2)}ms
-                    {'\n'}Data length: {item.result.data.length}
-                  </Text>
-                ) : (
-                  <Text style={styles.resultError}>Error: {item.error}</Text>
-                )}
-              </View>
-            ))}
+          {loading && (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#007AFF" />
+              <Text style={styles.loadingText}>Processing...</Text>
+            </View>
+          )}
+
+          {/* Basic Operations */}
+          <Text style={styles.sectionTitle}>📊 Basic Operations</Text>
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={[styles.button, loading && styles.buttonDisabled]}
+              onPress={testBasicRGB}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>Test Basic RGB</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.button, loading && styles.buttonDisabled]}
+              onPress={testImageNet}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>Test ImageNet (PyTorch)</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.button, loading && styles.buttonDisabled]}
+              onPress={testTensorFlow}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>Test TensorFlow</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.button, loading && styles.buttonDisabled]}
+              onPress={testGrayscale}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>Test Grayscale</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.button, loading && styles.buttonDisabled]}
+              onPress={testResizeStrategies}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>Test Resize Strategies</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.batchButton,
+                loading && styles.buttonDisabled,
+              ]}
+              onPress={testBatchProcessing}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>Test Batch Processing</Text>
+            </TouchableOpacity>
           </View>
-        )}
-      </ScrollView>
-    </SafeAreaView>
+
+          {/* Image Analysis */}
+          <Text style={styles.sectionTitle}>🔍 Image Analysis</Text>
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.analysisButton,
+                loading && styles.buttonDisabled,
+              ]}
+              onPress={testStatistics}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>Get Statistics</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.analysisButton,
+                loading && styles.buttonDisabled,
+              ]}
+              onPress={testImageMetadata}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>Get Metadata</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.analysisButton,
+                loading && styles.buttonDisabled,
+              ]}
+              onPress={testValidation}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>Validate Source</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.analysisButton,
+                loading && styles.buttonDisabled,
+              ]}
+              onPress={testBlurDetection}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>Detect Blur</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Augmentations & Transforms */}
+          <Text style={styles.sectionTitle}>🎨 Augmentations & Transforms</Text>
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.augmentButton,
+                loading && styles.buttonDisabled,
+              ]}
+              onPress={testAugmentations}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>Apply Augmentations</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.augmentButton,
+                loading && styles.buttonDisabled,
+              ]}
+              onPress={testFiveCrop}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>Five Crop Extract</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.augmentButton,
+                loading && styles.buttonDisabled,
+              ]}
+              onPress={testTensorToImage}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>Tensor → Image</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Tensor Operations */}
+          <Text style={styles.sectionTitle}>🧮 Tensor Operations</Text>
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.tensorButton,
+                loading && styles.buttonDisabled,
+              ]}
+              onPress={testExtractChannel}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>Extract Channel</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Quantization */}
+          <Text style={styles.sectionTitle}>🎯 Quantization (TFLite)</Text>
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.quantizeButton,
+                loading && styles.buttonDisabled,
+              ]}
+              onPress={testQuantization}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>Per-Tensor (uint8)</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.quantizeButton,
+                loading && styles.buttonDisabled,
+              ]}
+              onPress={testPerChannelQuantization}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>Per-Channel (int8)</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.quantizeButton,
+                loading && styles.buttonDisabled,
+              ]}
+              onPress={testDequantization}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>Dequantize Roundtrip</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Label Database */}
+          <Text style={styles.sectionTitle}>🏷️ Label Database</Text>
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.labelButton,
+                loading && styles.buttonDisabled,
+              ]}
+              onPress={testGetLabel}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>Get Single Label</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.labelButton,
+                loading && styles.buttonDisabled,
+              ]}
+              onPress={testTopLabels}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>Top Predictions</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.labelButton,
+                loading && styles.buttonDisabled,
+              ]}
+              onPress={testAvailableDatasets}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>Available Datasets</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Camera Frame Processing */}
+          <Text style={styles.sectionTitle}>📹 Camera Frame Utils</Text>
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.cameraButton,
+                loading && styles.buttonDisabled,
+              ]}
+              onPress={testCameraFrameProcessing}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>Process Camera Frame</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Bounding Box Utilities */}
+          <Text style={styles.sectionTitle}>📦 Bounding Box Utilities</Text>
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.boxButton,
+                loading && styles.buttonDisabled,
+              ]}
+              onPress={testBoxFormatConversion}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>Format Conversion</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.boxButton,
+                loading && styles.buttonDisabled,
+              ]}
+              onPress={testBoxScaling}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>Scale Boxes</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.boxButton,
+                loading && styles.buttonDisabled,
+              ]}
+              onPress={testClipBoxes}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>Clip Boxes</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.boxButton,
+                loading && styles.buttonDisabled,
+              ]}
+              onPress={testIoUCalculation}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>Calculate IoU</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.boxButton,
+                loading && styles.buttonDisabled,
+              ]}
+              onPress={testNMS}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>Non-Max Suppression</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Letterbox Padding */}
+          <Text style={styles.sectionTitle}>🖼️ Letterbox Padding</Text>
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.letterboxButton,
+                loading && styles.buttonDisabled,
+              ]}
+              onPress={testLetterbox}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>Apply Letterbox</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.letterboxButton,
+                loading && styles.buttonDisabled,
+              ]}
+              onPress={testReverseLetterbox}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>Reverse Letterbox</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Drawing & Visualization */}
+          <Text style={styles.sectionTitle}>🎨 Drawing & Visualization</Text>
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.drawButton,
+                loading && styles.buttonDisabled,
+              ]}
+              onPress={testDrawBoxes}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>Draw Boxes</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.drawButton,
+                loading && styles.buttonDisabled,
+              ]}
+              onPress={testDrawKeypoints}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>Draw Keypoints</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.drawButton,
+                loading && styles.buttonDisabled,
+              ]}
+              onPress={testHeatmapOverlay}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>Heatmap Overlay</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Cache Management */}
+          <Text style={styles.sectionTitle}>💾 Cache Management</Text>
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={[styles.button, styles.cacheButton]}
+              onPress={testCacheStats}
+            >
+              <Text style={styles.buttonText}>Cache Statistics</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.button, styles.clearButton]}
+              onPress={testClearCache}
+            >
+              <Text style={styles.buttonText}>Clear Cache</Text>
+            </TouchableOpacity>
+
+            {results.length > 0 && (
+              <TouchableOpacity
+                style={[styles.button, styles.clearButton]}
+                onPress={clearResults}
+              >
+                <Text style={styles.buttonText}>Clear Results</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {results.length > 0 && (
+            <View style={styles.resultsContainer}>
+              <Text style={styles.resultsTitle}>Results:</Text>
+              {results.map((item, index) => (
+                <View key={index} style={styles.resultItem}>
+                  <Text style={styles.resultLabel}>{item.label}</Text>
+                  {item.result ? (
+                    <Text style={styles.resultValue}>
+                      {item.result.width}x{item.result.height}x
+                      {item.result.channels} ({item.result.dataLayout}){'\n'}
+                      Time: {item.result.processingTimeMs.toFixed(2)}ms
+                      {'\n'}Data length: {item.result.data.length}
+                    </Text>
+                  ) : (
+                    <Text style={styles.resultError}>Error: {item.error}</Text>
+                  )}
+                </View>
+              ))}
+            </View>
+          )}
+        </ScrollView>
+      </SafeAreaView>
+    </SafeAreaProvider>
   );
 };
 
