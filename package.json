@@ -137,7 +137,8 @@
       "<rootDir>/node_modules/",
       "<rootDir>/example/",
       "<rootDir>/lib/",
-      "<rootDir>/src/__tests__/jest.setup.ts"
+      "<rootDir>/src/__tests__/jest.setup.ts",
+      "<rootDir>/src/__tests__/testSetup.ts"
     ]
   },
   "commitlint": {

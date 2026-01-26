@@ -3,7 +3,7 @@
  */
 
 import type { CameraPixelFormat, FrameOrientation } from '../types';
-import { mockProcessCameraFrame, mockConvertYUVToRGB } from './setup';
+import { mockProcessCameraFrame, mockConvertYUVToRGB } from './testSetup';
 import * as VisionUtils from '../index';
 
 describe('Camera Frame Processing', () => {

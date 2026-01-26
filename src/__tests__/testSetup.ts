@@ -27,6 +27,23 @@ const mockGetAvailableDatasets = jest.fn();
 const mockProcessCameraFrame = jest.fn();
 const mockConvertYUVToRGB = jest.fn();
 
+// Bounding Box Utils
+const mockConvertBoxFormat = jest.fn();
+const mockScaleBoxes = jest.fn();
+const mockClipBoxes = jest.fn();
+const mockCalculateIoU = jest.fn();
+const mockNonMaxSuppression = jest.fn();
+
+// Letterbox Utils
+const mockLetterbox = jest.fn();
+const mockReverseLetterbox = jest.fn();
+
+// Drawing Utils
+const mockDrawBoxes = jest.fn();
+const mockDrawKeypoints = jest.fn();
+const mockOverlayMask = jest.fn();
+const mockOverlayHeatmap = jest.fn();
+
 NativeModules.VisionUtils = {
   getPixelData: mockGetPixelData,
   batchGetPixelData: mockBatchGetPixelData,
@@ -53,6 +70,20 @@ NativeModules.VisionUtils = {
   getAvailableDatasets: mockGetAvailableDatasets,
   processCameraFrame: mockProcessCameraFrame,
   convertYUVToRGB: mockConvertYUVToRGB,
+  // Bounding Box Utils
+  convertBoxFormat: mockConvertBoxFormat,
+  scaleBoxes: mockScaleBoxes,
+  clipBoxes: mockClipBoxes,
+  calculateIoU: mockCalculateIoU,
+  nonMaxSuppression: mockNonMaxSuppression,
+  // Letterbox Utils
+  letterbox: mockLetterbox,
+  reverseLetterbox: mockReverseLetterbox,
+  // Drawing Utils
+  drawBoxes: mockDrawBoxes,
+  drawKeypoints: mockDrawKeypoints,
+  overlayMask: mockOverlayMask,
+  overlayHeatmap: mockOverlayHeatmap,
 };
 
 export {
@@ -81,4 +112,18 @@ export {
   mockGetAvailableDatasets,
   mockProcessCameraFrame,
   mockConvertYUVToRGB,
+  // Bounding Box Utils
+  mockConvertBoxFormat,
+  mockScaleBoxes,
+  mockClipBoxes,
+  mockCalculateIoU,
+  mockNonMaxSuppression,
+  // Letterbox Utils
+  mockLetterbox,
+  mockReverseLetterbox,
+  // Drawing Utils
+  mockDrawBoxes,
+  mockDrawKeypoints,
+  mockOverlayMask,
+  mockOverlayHeatmap,
 };

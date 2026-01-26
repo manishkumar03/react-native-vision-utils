@@ -9,7 +9,7 @@ import {
   mockGetAllLabels,
   mockGetDatasetInfo,
   mockGetAvailableDatasets,
-} from './setup';
+} from './testSetup';
 import * as VisionUtils from '../index';
 
 describe('Label Database', () => {
