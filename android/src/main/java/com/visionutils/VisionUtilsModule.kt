@@ -1514,6 +1514,72 @@ class VisionUtilsModule(reactContext: ReactApplicationContext) :
     }
   }
 
+  /**
+   * Extract patches from an image in a grid pattern.
+   * Useful for sliding window inference or creating training patches.
+   *
+   * @param source Image source (uri or base64)
+   * @param gridOptions Grid extraction options (patchWidth, patchHeight, strideX, strideY, includePartial)
+   * @param pixelOptions Pixel data output options
+   */
+  override fun extractGrid(
+    source: ReadableMap,
+    gridOptions: ReadableMap,
+    pixelOptions: ReadableMap,
+    promise: Promise
+  ) {
+    scope.launch {
+      try {
+        val result = GridExtractorAndroid.extractGrid(source, gridOptions, pixelOptions, reactApplicationContext)
+
+        withContext(Dispatchers.Main) {
+          promise.resolve(result)
+        }
+      } catch (e: VisionUtilsException) {
+        withContext(Dispatchers.Main) {
+          promise.reject(e.code, e.message)
+        }
+      } catch (e: Exception) {
+        withContext(Dispatchers.Main) {
+          promise.reject("GRID_EXTRACTION_ERROR", e.message ?: "Failed to extract grid")
+        }
+      }
+    }
+  }
+
+  /**
+   * Extract random crops from an image.
+   * Useful for data augmentation with reproducible results when using seeds.
+   *
+   * @param source Image source (uri or base64)
+   * @param cropOptions Random crop options (width, height, count, seed)
+   * @param pixelOptions Pixel data output options
+   */
+  override fun randomCrop(
+    source: ReadableMap,
+    cropOptions: ReadableMap,
+    pixelOptions: ReadableMap,
+    promise: Promise
+  ) {
+    scope.launch {
+      try {
+        val result = RandomCropperAndroid.randomCrop(source, cropOptions, pixelOptions, reactApplicationContext)
+
+        withContext(Dispatchers.Main) {
+          promise.resolve(result)
+        }
+      } catch (e: VisionUtilsException) {
+        withContext(Dispatchers.Main) {
+          promise.reject(e.code, e.message)
+        }
+      } catch (e: Exception) {
+        withContext(Dispatchers.Main) {
+          promise.reject("RANDOM_CROP_ERROR", e.message ?: "Failed to extract random crop")
+        }
+      }
+    }
+  }
+
   companion object {
     const val NAME = NativeVisionUtilsSpec.NAME
   }

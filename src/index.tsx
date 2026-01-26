@@ -87,6 +87,18 @@ import {
   type VideoSource,
   type ExtractVideoFramesOptions,
   type ExtractVideoFramesResult,
+  // Grid/Patch Extraction Types
+  type GridExtractOptions,
+  type GridExtractResult,
+  // Random Crop Types
+  type RandomCropOptions,
+  type RandomCropResult,
+  // Tensor Validation Types
+  type TensorSpec,
+  type TensorValidationResult,
+  // Batch Assembly Types
+  type BatchAssemblyOptions,
+  type BatchAssemblyResult,
 } from './types';
 
 // Re-export all types
@@ -559,6 +571,7 @@ function prepareOptions(options: GetPixelDataOptions): PreparedOptions {
       padColor: presetApplied.resize.padColor || DEFAULT_PAD_COLOR,
       letterboxColor:
         presetApplied.resize.letterboxColor || DEFAULT_LETTERBOX_COLOR,
+      paddingMode: presetApplied.resize.paddingMode || 'constant',
     };
   }
 
@@ -2729,4 +2742,382 @@ export async function extractVideoFrames(
   } catch (error) {
     throw VisionUtilsException.fromNativeError(error);
   }
+}
+
+// =============================================================================
+// Grid/Patch Extraction API
+// =============================================================================
+
+/**
+ * Extract a grid of patches from an image for sliding window inference
+ *
+ * Useful for processing large images that don't fit in model input size,
+ * or for attention-based analysis of image regions.
+ *
+ * @param source - Image source
+ * @param gridOptions - Grid configuration (rows, columns, overlap)
+ * @param pixelOptions - Optional pixel processing options (normalization, etc.)
+ * @returns Promise resolving to grid of patches with coordinates
+ *
+ * @example
+ * // Split image into 3x3 grid with 10% overlap
+ * const result = await extractGrid(
+ *   { type: 'file', value: '/path/to/large-image.jpg' },
+ *   { rows: 3, columns: 3, overlapPercent: 0.1 }
+ * );
+ * // Process each patch
+ * result.patches.forEach(patch => {
+ *   console.log(`Patch at (${patch.x}, ${patch.y}): ${patch.width}x${patch.height}`);
+ * });
+ *
+ * @example
+ * // Extract 4x4 grid with pixel overlap for seamless stitching
+ * const result = await extractGrid(
+ *   { type: 'url', value: 'https://example.com/satellite.jpg' },
+ *   { rows: 4, columns: 4, overlap: 32 },
+ *   { normalization: { preset: 'imagenet' } }
+ * );
+ */
+export async function extractGrid(
+  source: ImageSource,
+  gridOptions: GridExtractOptions,
+  pixelOptions: Omit<GetPixelDataOptions, 'source'> = {}
+): Promise<GridExtractResult> {
+  validateSource(source);
+
+  if (gridOptions.rows < 1 || gridOptions.columns < 1) {
+    throw new VisionUtilsException(
+      'INVALID_OPTIONS',
+      'Grid rows and columns must be at least 1'
+    );
+  }
+
+  const opts = {
+    ...gridOptions,
+    overlap: gridOptions.overlap ?? 0,
+    overlapPercent: gridOptions.overlapPercent,
+    includePartial: gridOptions.includePartial ?? false,
+  };
+
+  const preparedPixelOptions = prepareOptions({
+    source,
+    ...pixelOptions,
+  });
+
+  try {
+    const result = await VisionUtils.extractGrid(
+      source,
+      opts,
+      preparedPixelOptions
+    );
+    return result as GridExtractResult;
+  } catch (error) {
+    throw VisionUtilsException.fromNativeError(error);
+  }
+}
+
+// =============================================================================
+// Random Crop API
+// =============================================================================
+
+/**
+ * Extract random crops from an image with optional seed for reproducibility
+ *
+ * Useful for test-time augmentation (TTA) or generating training samples.
+ * When a seed is provided, the same crops will be generated for the same image.
+ *
+ * @param source - Image source
+ * @param cropOptions - Crop size and random options
+ * @param pixelOptions - Optional pixel processing options
+ * @returns Promise resolving to random crops
+ *
+ * @example
+ * // Get 5 random 224x224 crops with seed for reproducibility
+ * const result = await randomCrop(
+ *   { type: 'file', value: '/path/to/image.jpg' },
+ *   { width: 224, height: 224, count: 5, seed: 42 }
+ * );
+ * // Same seed will produce same crops
+ *
+ * @example
+ * // Single random crop for inference variation
+ * const result = await randomCrop(
+ *   { type: 'url', value: 'https://example.com/image.jpg' },
+ *   { width: 224, height: 224 },
+ *   { normalization: { preset: 'imagenet' } }
+ * );
+ */
+export async function randomCrop(
+  source: ImageSource,
+  cropOptions: RandomCropOptions,
+  pixelOptions: Omit<GetPixelDataOptions, 'source'> = {}
+): Promise<RandomCropResult> {
+  validateSource(source);
+
+  if (cropOptions.width < 1 || cropOptions.height < 1) {
+    throw new VisionUtilsException(
+      'INVALID_OPTIONS',
+      'Crop width and height must be at least 1'
+    );
+  }
+
+  const opts = {
+    ...cropOptions,
+    count: cropOptions.count ?? 1,
+    seed: cropOptions.seed ?? Math.floor(Math.random() * 2147483647),
+  };
+
+  const preparedPixelOptions = prepareOptions({
+    source,
+    ...pixelOptions,
+  });
+
+  try {
+    const result = await VisionUtils.randomCrop(
+      source,
+      opts,
+      preparedPixelOptions
+    );
+    return result as RandomCropResult;
+  } catch (error) {
+    throw VisionUtilsException.fromNativeError(error);
+  }
+}
+
+// =============================================================================
+// Tensor Validation API
+// =============================================================================
+
+/**
+ * Validate tensor data against expected specifications
+ *
+ * Use this to catch preprocessing errors before inference.
+ * Checks shape, value ranges, and data characteristics.
+ *
+ * @param data - Tensor data as flat array
+ * @param shape - Actual shape of the tensor [dim1, dim2, ...]
+ * @param spec - Expected tensor specification
+ * @returns Validation result with issues if any
+ *
+ * @example
+ * // Validate preprocessed image for MobileNet
+ * const pixelData = await getPixelData({ source, ...MODEL_PRESETS.mobilenet });
+ * const validation = validateTensor(
+ *   Array.from(pixelData.data),
+ *   pixelData.shape,
+ *   {
+ *     shape: [1, 224, 224, 3],
+ *     minValue: -3,    // ImageNet normalized range
+ *     maxValue: 3,
+ *     dtype: 'float32'
+ *   }
+ * );
+ * if (!validation.isValid) {
+ *   console.error('Preprocessing error:', validation.issues);
+ * }
+ *
+ * @example
+ * // Quick range check
+ * const validation = validateTensor(data, shape, { minValue: 0, maxValue: 1 });
+ */
+export function validateTensor(
+  data: number[] | Float32Array | Int32Array | Uint8Array,
+  shape: number[],
+  spec: TensorSpec = {}
+): TensorValidationResult {
+  const issues: string[] = [];
+  const arr = Array.isArray(data) ? data : Array.from(data);
+
+  // Calculate actual statistics
+  let actualMin = Infinity;
+  let actualMax = -Infinity;
+  let sum = 0;
+
+  for (const val of arr) {
+    if (val < actualMin) actualMin = val;
+    if (val > actualMax) actualMax = val;
+    sum += val;
+  }
+
+  const actualMean = arr.length > 0 ? sum / arr.length : 0;
+
+  // Validate shape
+  const expectedSize = shape.reduce((a, b) => a * b, 1);
+  if (arr.length !== expectedSize) {
+    issues.push(
+      `Data length ${arr.length} does not match shape ${shape.join(
+        'x'
+      )} = ${expectedSize}`
+    );
+  }
+
+  if (spec.shape) {
+    if (spec.shape.length !== shape.length) {
+      issues.push(
+        `Shape rank ${shape.length} does not match expected ${spec.shape.length}`
+      );
+    } else {
+      for (let i = 0; i < spec.shape.length; i++) {
+        if (spec.shape[i] !== -1 && spec.shape[i] !== shape[i]) {
+          issues.push(
+            `Dimension ${i}: expected ${spec.shape[i]}, got ${shape[i]}`
+          );
+        }
+      }
+    }
+  }
+
+  // Validate channels
+  if (spec.channels !== undefined) {
+    const actualChannels = shape[shape.length - 1]; // Assume last dim is channels for HWC
+    if (actualChannels !== spec.channels) {
+      issues.push(`Expected ${spec.channels} channels, got ${actualChannels}`);
+    }
+  }
+
+  // Validate value range
+  if (spec.minValue !== undefined && actualMin < spec.minValue) {
+    issues.push(
+      `Min value ${actualMin.toFixed(4)} is below expected ${spec.minValue}`
+    );
+  }
+
+  if (spec.maxValue !== undefined && actualMax > spec.maxValue) {
+    issues.push(
+      `Max value ${actualMax.toFixed(4)} is above expected ${spec.maxValue}`
+    );
+  }
+
+  return {
+    isValid: issues.length === 0,
+    issues,
+    actualShape: shape,
+    actualMin: actualMin === Infinity ? 0 : actualMin,
+    actualMax: actualMax === -Infinity ? 0 : actualMax,
+    actualMean,
+  };
+}
+
+// =============================================================================
+// Batch Assembly API
+// =============================================================================
+
+/**
+ * Assemble multiple pixel data results into a single batch tensor
+ *
+ * Takes outputs from getPixelData or batchGetPixelData and combines them
+ * into a single contiguous array with batch dimension.
+ *
+ * @param pixelDataResults - Array of PixelDataResult objects
+ * @param options - Assembly options (layout, padding)
+ * @returns Assembled batch tensor with shape
+ *
+ * @example
+ * // Process multiple images and batch them
+ * const results = await batchGetPixelData([
+ *   { source: { type: 'url', value: url1 }, ...MODEL_PRESETS.mobilenet },
+ *   { source: { type: 'url', value: url2 }, ...MODEL_PRESETS.mobilenet },
+ *   { source: { type: 'url', value: url3 }, ...MODEL_PRESETS.mobilenet },
+ * ]);
+ *
+ * const successful = results.results.filter(r => !('error' in r)) as PixelDataResult[];
+ * const batch = assembleBatch(successful, { layout: 'nchw' });
+ * // batch.data is [3, 3, 224, 224] for PyTorch
+ * // batch.shape is [3, 3, 224, 224]
+ *
+ * @example
+ * // Pad batch to fixed size for TPU
+ * const batch = assembleBatch(results, { layout: 'nhwc', padToSize: 8 });
+ */
+export function assembleBatch(
+  pixelDataResults: PixelDataResult[],
+  options: BatchAssemblyOptions = {}
+): BatchAssemblyResult {
+  const startTime = performance.now();
+
+  if (pixelDataResults.length === 0) {
+    throw new VisionUtilsException(
+      'INVALID_INPUT',
+      'Cannot assemble empty batch'
+    );
+  }
+
+  const layout = options.layout ?? 'nchw';
+  const padToSize = options.padToSize;
+
+  // Verify all results have same dimensions
+  const first = pixelDataResults[0]!;
+  const height = first.height;
+  const width = first.width;
+  const channels = first.shape[first.shape.length - 1] ?? 3;
+
+  for (let i = 1; i < pixelDataResults.length; i++) {
+    const result = pixelDataResults[i]!;
+    if (result.height !== height || result.width !== width) {
+      throw new VisionUtilsException(
+        'DIMENSION_MISMATCH',
+        `Image ${i} has size ${result.width}x${result.height}, expected ${width}x${height}`
+      );
+    }
+  }
+
+  // Determine batch size
+  let batchSize = pixelDataResults.length;
+  if (padToSize && padToSize > batchSize) {
+    batchSize = padToSize;
+  }
+
+  // Calculate output shape
+  const shape: [number, number, number, number] =
+    layout === 'nchw'
+      ? [batchSize, channels, height, width]
+      : [batchSize, height, width, channels];
+
+  const totalSize = batchSize * channels * height * width;
+  const data = new Array<number>(totalSize).fill(0);
+
+  // Copy data into batch
+  const imageSize = channels * height * width;
+
+  for (let i = 0; i < pixelDataResults.length; i++) {
+    const result = pixelDataResults[i]!;
+    const srcData = Array.isArray(result.data)
+      ? result.data
+      : Array.from(result.data);
+
+    // Determine if we need to transpose (HWC to CHW or vice versa)
+    const srcLayout = result.shape.length === 4 ? 'nhwc' : 'hwc';
+    const needsTranspose =
+      (srcLayout === 'hwc' || srcLayout === 'nhwc') && layout === 'nchw';
+
+    const offset = i * imageSize;
+
+    if (needsTranspose) {
+      // HWC to CHW: reorder from RGBRGBRGB... to RRR...GGG...BBB...
+      for (let c = 0; c < channels; c++) {
+        for (let h = 0; h < height; h++) {
+          for (let w = 0; w < width; w++) {
+            const srcIdx = (h * width + w) * channels + c;
+            const dstIdx = offset + c * height * width + h * width + w;
+            data[dstIdx] = srcData[srcIdx] ?? 0;
+          }
+        }
+      }
+    } else {
+      // Direct copy
+      for (let j = 0; j < imageSize && j < srcData.length; j++) {
+        data[offset + j] = srcData[j] ?? 0;
+      }
+    }
+  }
+
+  const processingTimeMs = performance.now() - startTime;
+
+  return {
+    data,
+    shape,
+    layout,
+    batchSize,
+    processingTimeMs,
+  };
 }

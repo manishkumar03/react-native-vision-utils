@@ -1317,4 +1317,74 @@ public class VisionUtilsBridge: NSObject {
             }
         }
     }
+
+    // MARK: - Grid/Patch Extraction
+
+    @objc
+    public static func extractGrid(
+        _ source: NSDictionary,
+        gridOptions: NSDictionary,
+        pixelOptions: NSDictionary,
+        resolve: @escaping (NSDictionary) -> Void,
+        reject: @escaping (String, String) -> Void
+    ) {
+        Task {
+            do {
+                guard let sourceDict = source as? [String: Any] else {
+                    reject("INVALID_SOURCE", "Invalid source format")
+                    return
+                }
+
+                let gridDict = gridOptions as? [String: Any] ?? [:]
+                let pixelDict = pixelOptions as? [String: Any] ?? [:]
+
+                let result = try await GridExtractor.extractGrid(
+                    source: sourceDict,
+                    gridOptions: gridDict,
+                    pixelOptions: pixelDict
+                )
+
+                resolve(result as NSDictionary)
+            } catch let error as VisionUtilsError {
+                reject(error.code, error.message)
+            } catch {
+                reject("GRID_EXTRACTION_ERROR", error.localizedDescription)
+            }
+        }
+    }
+
+    // MARK: - Random Crop
+
+    @objc
+    public static func randomCrop(
+        _ source: NSDictionary,
+        cropOptions: NSDictionary,
+        pixelOptions: NSDictionary,
+        resolve: @escaping (NSDictionary) -> Void,
+        reject: @escaping (String, String) -> Void
+    ) {
+        Task {
+            do {
+                guard let sourceDict = source as? [String: Any] else {
+                    reject("INVALID_SOURCE", "Invalid source format")
+                    return
+                }
+
+                let cropDict = cropOptions as? [String: Any] ?? [:]
+                let pixelDict = pixelOptions as? [String: Any] ?? [:]
+
+                let result = try await RandomCropper.randomCrop(
+                    source: sourceDict,
+                    cropOptions: cropDict,
+                    pixelOptions: pixelDict
+                )
+
+                resolve(result as NSDictionary)
+            } catch let error as VisionUtilsError {
+                reject(error.code, error.message)
+            } catch {
+                reject("RANDOM_CROP_ERROR", error.localizedDescription)
+            }
+        }
+    }
 }

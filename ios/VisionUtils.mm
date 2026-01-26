@@ -576,6 +576,40 @@
     }];
 }
 
+// MARK: - Grid Extraction
+
+- (void)extractGrid:(NSDictionary *)source
+        gridOptions:(NSDictionary *)gridOptions
+       pixelOptions:(NSDictionary *)pixelOptions
+            resolve:(RCTPromiseResolveBlock)resolve
+             reject:(RCTPromiseRejectBlock)reject {
+    [VisionUtilsBridge extractGrid:source
+                       gridOptions:gridOptions
+                      pixelOptions:pixelOptions
+                           resolve:^(NSDictionary *result) {
+        resolve(result);
+    } reject:^(NSString *code, NSString *message) {
+        reject(code, message, nil);
+    }];
+}
+
+// MARK: - Random Crop
+
+- (void)randomCrop:(NSDictionary *)source
+       cropOptions:(NSDictionary *)cropOptions
+      pixelOptions:(NSDictionary *)pixelOptions
+           resolve:(RCTPromiseResolveBlock)resolve
+            reject:(RCTPromiseRejectBlock)reject {
+    [VisionUtilsBridge randomCrop:source
+                      cropOptions:cropOptions
+                     pixelOptions:pixelOptions
+                          resolve:^(NSDictionary *result) {
+        resolve(result);
+    } reject:^(NSString *code, NSString *message) {
+        reject(code, message, nil);
+    }];
+}
+
 // MARK: - TurboModule
 
 - (std::shared_ptr<facebook::react::TurboModule>)getTurboModule:

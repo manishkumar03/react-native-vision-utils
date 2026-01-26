@@ -2537,7 +2537,7 @@ PODS:
     - React-utils (= 0.83.0)
     - SocketRocket
   - SocketRocket (0.7.1)
-  - VisionUtils (1.1.0):
+  - VisionUtils (1.2.0):
     - boost
     - DoubleConversion
     - fast_float
@@ -2894,7 +2894,7 @@ SPEC CHECKSUMS:
   ReactCodegen: 10a61330b137caaad6f7fbe7f5d0e7a40d621700
   ReactCommon: c6cd81778336e767e27fe63c6707dd6b735fff5c
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
-  VisionUtils: dd275998d6c4985bc9f237c3b77420ec9c846506
+  VisionUtils: ff638083c89b25483f93bdee9583eb12ece5ce39
   Yoga: 6ca93c8c13f56baeec55eb608577619b17a4d64e
 
 PODFILE CHECKSUM: 17994baec44471422dbe5d477936ca2916e073af

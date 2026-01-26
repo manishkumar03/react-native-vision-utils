@@ -130,6 +130,15 @@ export interface Normalization {
 export type ResizeStrategy = 'cover' | 'contain' | 'stretch' | 'letterbox';
 
 /**
+ * Padding mode for resize operations
+ * - 'constant': Fill with constant color (default)
+ * - 'reflect': Mirror padding (reflects pixels at edge)
+ * - 'replicate': Repeat edge pixels
+ * - 'wrap': Wrap around to opposite edge
+ */
+export type ResizePaddingMode = 'constant' | 'reflect' | 'replicate' | 'wrap';
+
+/**
  * Resize options
  */
 export interface ResizeOptions {
@@ -143,6 +152,8 @@ export interface ResizeOptions {
   padColor?: [number, number, number, number];
   /** Letterbox color for 'letterbox' strategy [R, G, B] (default: [114, 114, 114] - YOLO gray) */
   letterboxColor?: [number, number, number];
+  /** Padding mode for 'contain' and 'letterbox' strategies (default: 'constant') */
+  paddingMode?: ResizePaddingMode;
 }
 
 /**
@@ -1982,6 +1993,200 @@ export interface ExtractVideoFramesResult {
   videoHeight: number;
   /** Video frame rate */
   frameRate: number;
+  /** Processing time in milliseconds */
+  processingTimeMs: number;
+}
+
+// =============================================================================
+// Grid/Patch Extraction Types
+// =============================================================================
+
+/**
+ * Options for grid/patch extraction
+ */
+export interface GridExtractOptions {
+  /** Number of columns in the grid */
+  columns: number;
+  /** Number of rows in the grid */
+  rows: number;
+  /** Overlap between patches in pixels (default: 0) */
+  overlap?: number;
+  /** Overlap as percentage of patch size 0-1 (alternative to overlap) */
+  overlapPercent?: number;
+  /** Whether to include partial patches at edges (default: false) */
+  includePartial?: boolean;
+}
+
+/**
+ * Single patch from grid extraction
+ */
+export interface GridPatch {
+  /** Patch data (pixel array) */
+  data: number[];
+  /** Row index in grid (0-based) */
+  row: number;
+  /** Column index in grid (0-based) */
+  column: number;
+  /** X coordinate in original image */
+  x: number;
+  /** Y coordinate in original image */
+  y: number;
+  /** Patch width */
+  width: number;
+  /** Patch height */
+  height: number;
+}
+
+/**
+ * Result of grid extraction
+ */
+export interface GridExtractResult {
+  /** Array of extracted patches */
+  patches: GridPatch[];
+  /** Number of patches extracted */
+  patchCount: number;
+  /** Number of columns */
+  columns: number;
+  /** Number of rows */
+  rows: number;
+  /** Original image width */
+  originalWidth: number;
+  /** Original image height */
+  originalHeight: number;
+  /** Individual patch width */
+  patchWidth: number;
+  /** Individual patch height */
+  patchHeight: number;
+  /** Processing time in milliseconds */
+  processingTimeMs: number;
+}
+
+// =============================================================================
+// Random Crop Types
+// =============================================================================
+
+/**
+ * Options for random crop
+ */
+export interface RandomCropOptions {
+  /** Crop width */
+  width: number;
+  /** Crop height */
+  height: number;
+  /** Random seed for reproducibility (optional) */
+  seed?: number;
+  /** Number of random crops to generate (default: 1) */
+  count?: number;
+}
+
+/**
+ * Single random crop result
+ */
+export interface RandomCropItem {
+  /** Crop data (pixel array) */
+  data: number[];
+  /** X coordinate of crop origin */
+  x: number;
+  /** Y coordinate of crop origin */
+  y: number;
+  /** Crop width */
+  width: number;
+  /** Crop height */
+  height: number;
+  /** Seed used for this crop */
+  seed: number;
+  /** Optional index of the crop in the sequence */
+  index?: number;
+}
+
+/**
+ * Result of random crop operation
+ */
+export interface RandomCropResult {
+  /** Array of crop results */
+  crops: RandomCropItem[];
+  /** Number of crops */
+  cropCount: number;
+  /** Crop width */
+  cropWidth: number;
+  /** Crop height */
+  cropHeight: number;
+  /** Seed used for generation (applied to all crops) */
+  seed: number;
+  /** Original image width */
+  originalWidth: number;
+  /** Original image height */
+  originalHeight: number;
+  /** Processing time in milliseconds */
+  processingTimeMs: number;
+}
+
+// =============================================================================
+// Tensor Validation Types
+// =============================================================================
+
+/**
+ * Expected tensor specification for validation
+ */
+export interface TensorSpec {
+  /** Expected shape [dim1, dim2, ...] - use -1 for any size */
+  shape?: number[];
+  /** Expected data layout */
+  layout?: DataLayout;
+  /** Minimum allowed value */
+  minValue?: number;
+  /** Maximum allowed value */
+  maxValue?: number;
+  /** Expected number of channels */
+  channels?: number;
+  /** Expected dtype */
+  dtype?: 'float32' | 'int32' | 'uint8';
+}
+
+/**
+ * Result of tensor validation
+ */
+export interface TensorValidationResult {
+  /** Whether tensor passes all validations */
+  isValid: boolean;
+  /** List of validation issues found */
+  issues: string[];
+  /** Actual shape of the tensor */
+  actualShape: number[];
+  /** Actual min value in tensor */
+  actualMin: number;
+  /** Actual max value in tensor */
+  actualMax: number;
+  /** Actual mean value */
+  actualMean: number;
+}
+
+// =============================================================================
+// Batch Assembly Types
+// =============================================================================
+
+/**
+ * Options for batch tensor assembly
+ */
+export interface BatchAssemblyOptions {
+  /** Target data layout for batch (default: 'nchw') */
+  layout?: 'nhwc' | 'nchw';
+  /** Pad batch to this size with zeros (optional) */
+  padToSize?: number;
+}
+
+/**
+ * Result of batch assembly
+ */
+export interface BatchAssemblyResult {
+  /** Assembled batch tensor as flat array */
+  data: number[];
+  /** Batch shape [N, C, H, W] or [N, H, W, C] depending on layout */
+  shape: [number, number, number, number];
+  /** Data layout */
+  layout: 'nhwc' | 'nchw';
+  /** Number of images in batch */
+  batchSize: number;
   /** Processing time in milliseconds */
   processingTimeMs: number;
 }

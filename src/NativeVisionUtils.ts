@@ -392,6 +392,32 @@ export interface Spec extends TurboModule {
   extractVideoFrames(source: Object, options: Object): Promise<Object>;
 
   /**
+   * Extract a grid of patches from an image for sliding window inference
+   * @param source - Image source
+   * @param gridOptions - Grid configuration (rows, columns, overlap)
+   * @param pixelOptions - Pixel processing options
+   * @returns Promise resolving to grid of patches
+   */
+  extractGrid(
+    source: Object,
+    gridOptions: Object,
+    pixelOptions: Object
+  ): Promise<Object>;
+
+  /**
+   * Extract random crops from an image
+   * @param source - Image source
+   * @param cropOptions - Crop size and random options
+   * @param pixelOptions - Pixel processing options
+   * @returns Promise resolving to random crops
+   */
+  randomCrop(
+    source: Object,
+    cropOptions: Object,
+    pixelOptions: Object
+  ): Promise<Object>;
+
+  /**
    * Clear the pixel data cache
    */
   clearCache(): Promise<void>;

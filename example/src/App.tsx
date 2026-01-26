@@ -43,6 +43,10 @@ import {
   overlayHeatmap,
   detectBlur,
   extractVideoFrames,
+  extractGrid,
+  randomCrop,
+  validateTensor,
+  assembleBatch,
   type PixelDataResult,
   type ColorFormat,
   type DataLayout,
@@ -71,6 +75,7 @@ interface ResultData {
 
 const App: React.FC = () => {
   const [loading, setLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('Processing...');
   const [results, setResults] = useState<ResultData[]>([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [processedImageUri, setProcessedImageUri] = useState<string | null>(
@@ -1313,6 +1318,7 @@ const App: React.FC = () => {
 
   // Test video frame extraction (uses a sample video URL)
   const testVideoFrameExtraction = useCallback(async () => {
+    setLoadingMessage('Extracting video frames...\nThis may take a moment');
     setLoading(true);
     try {
       // Use a sample video URL (Big Buck Bunny - public domain)
@@ -1349,6 +1355,176 @@ const App: React.FC = () => {
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       Alert.alert('Error', `Video extraction failed: ${errorMessage}`);
+    } finally {
+      setLoading(false);
+      setLoadingMessage('Processing...');
+    }
+  }, []);
+
+  // Test grid extraction
+  const testGridExtraction = useCallback(async () => {
+    setLoading(true);
+    try {
+      const result = await extractGrid(
+        { type: 'url', value: currentImage },
+        {
+          columns: 3,
+          rows: 3,
+          overlap: 0,
+          includePartial: false,
+        },
+        {
+          colorFormat: 'rgb',
+          normalization: { preset: 'scale' },
+        }
+      );
+
+      Alert.alert(
+        'Grid Extraction',
+        `Extracted ${result.patchCount} patches (${result.columns}x${result.rows})\n` +
+          `Patch size: ${result.patchWidth}x${result.patchHeight}\n` +
+          `Original size: ${result.originalWidth}x${result.originalHeight}\n\n` +
+          `Sample patch positions:\n` +
+          result.patches
+            .slice(0, 4)
+            .map(
+              (p) =>
+                `  [${p.row},${p.column}]: (${p.x},${p.y}) ${p.width}x${p.height}`
+            )
+            .join('\n') +
+          `\n\nTime: ${result.processingTimeMs.toFixed(2)}ms`
+      );
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      Alert.alert('Error', errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentImage]);
+
+  // Test random crop
+  const testRandomCrop = useCallback(async () => {
+    setLoading(true);
+    try {
+      const result = await randomCrop(
+        { type: 'url', value: currentImage },
+        {
+          width: 64,
+          height: 64,
+          count: 5,
+          seed: 42, // For reproducibility
+        },
+        {
+          colorFormat: 'rgb',
+          normalization: { preset: 'scale' },
+        }
+      );
+
+      Alert.alert(
+        'Random Crop',
+        `Extracted ${result.cropCount} random crops\n` +
+          `Crop size: ${result.crops[0]?.width ?? 64}x${
+            result.crops[0]?.height ?? 64
+          }\n` +
+          `Original size: ${result.originalWidth}x${result.originalHeight}\n` +
+          `Seed used: ${result.crops[0]?.seed ?? 'N/A'}\n\n` +
+          `Crop positions:\n` +
+          result.crops.map((c, i) => `  ${i + 1}: (${c.x},${c.y})`).join('\n') +
+          `\n\nTime: ${(result.processingTimeMs ?? 0).toFixed(2)}ms`
+      );
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      Alert.alert('Error', errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentImage]);
+
+  // Test tensor validation
+  const testTensorValidation = useCallback(async () => {
+    setLoading(true);
+    try {
+      // First get some pixel data
+      const pixelResult = await getPixelData({
+        source: { type: 'url', value: currentImage },
+        resize: { width: 224, height: 224, strategy: 'cover' },
+        colorFormat: 'rgb',
+        normalization: { preset: 'scale' },
+        dataLayout: 'chw',
+      });
+
+      // Convert to number[] for validateTensor
+      const dataArray = Array.from(pixelResult.data as ArrayLike<number>);
+
+      // Validate against expected spec
+      const validation = validateTensor(dataArray, [3, 224, 224], {
+        shape: [3, 224, 224],
+        dtype: 'float32',
+        minValue: 0,
+        maxValue: 1,
+      });
+
+      Alert.alert(
+        'Tensor Validation',
+        `Valid: ${validation.isValid ? 'YES ✓' : 'NO ✗'}\n` +
+          `Actual shape: [${validation.actualShape.join(', ')}]\n\n` +
+          `Statistics:\n` +
+          `  Min: ${validation.actualMin.toFixed(4)}\n` +
+          `  Max: ${validation.actualMax.toFixed(4)}\n` +
+          `  Mean: ${validation.actualMean.toFixed(4)}\n\n` +
+          (validation.issues.length > 0
+            ? `Issues: ${validation.issues.join(', ')}`
+            : 'No issues')
+      );
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      Alert.alert('Error', errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentImage]);
+
+  // Test batch assembly
+  const testBatchAssembly = useCallback(async () => {
+    setLoading(true);
+    try {
+      // Process multiple images
+      const batchResults = await batchGetPixelData(
+        SAMPLE_IMAGES.map((url) => ({
+          source: { type: 'url' as const, value: url },
+          resize: { width: 224, height: 224, strategy: 'cover' as const },
+          colorFormat: 'rgb' as const,
+          normalization: { preset: 'imagenet' as const },
+          dataLayout: 'chw' as const,
+        })),
+        { concurrency: 3 }
+      );
+
+      // Filter successful results
+      const successfulResults = batchResults.results.filter(
+        (r): r is PixelDataResult => !('error' in r)
+      );
+
+      if (successfulResults.length === 0) {
+        throw new Error('No images processed successfully');
+      }
+
+      // Assemble into batch
+      const batch = assembleBatch(successfulResults, {
+        layout: 'nchw',
+      });
+
+      Alert.alert(
+        'Batch Assembly',
+        `Assembled ${batch.batchSize} images into batch\n` +
+          `Shape: [${batch.shape.join(', ')}]\n` +
+          `Layout: NCHW\n` +
+          `Total elements: ${batch.data.length.toLocaleString()}\n\n` +
+          `Time: ${batchResults.totalTimeMs.toFixed(2)}ms`
+      );
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      Alert.alert('Error', errorMessage);
     } finally {
       setLoading(false);
     }
@@ -1389,13 +1565,6 @@ const App: React.FC = () => {
             >
               <Text style={styles.buttonText}>Show Original</Text>
             </TouchableOpacity>
-          )}
-
-          {loading && (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#007AFF" />
-              <Text style={styles.loadingText}>Processing...</Text>
-            </View>
           )}
 
           {/* Basic Operations */}
@@ -1556,6 +1725,30 @@ const App: React.FC = () => {
             >
               <Text style={styles.buttonText}>Tensor → Image</Text>
             </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.augmentButton,
+                loading && styles.buttonDisabled,
+              ]}
+              onPress={testGridExtraction}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>Extract Grid</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.augmentButton,
+                loading && styles.buttonDisabled,
+              ]}
+              onPress={testRandomCrop}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>Random Crop</Text>
+            </TouchableOpacity>
           </View>
 
           {/* Tensor Operations */}
@@ -1571,6 +1764,30 @@ const App: React.FC = () => {
               disabled={loading}
             >
               <Text style={styles.buttonText}>Extract Channel</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.tensorButton,
+                loading && styles.buttonDisabled,
+              ]}
+              onPress={testTensorValidation}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>Validate Tensor</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.tensorButton,
+                loading && styles.buttonDisabled,
+              ]}
+              onPress={testBatchAssembly}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>Assemble Batch</Text>
             </TouchableOpacity>
           </View>
 
@@ -1850,6 +2067,13 @@ const App: React.FC = () => {
             </View>
           )}
         </ScrollView>
+
+        {loading && (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#FFFFFF" />
+            <Text style={styles.loadingText}>{loadingMessage}</Text>
+          </View>
+        )}
       </SafeAreaView>
     </SafeAreaProvider>
   );
@@ -1906,12 +2130,22 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   loadingContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
     alignItems: 'center',
-    marginVertical: 20,
+    zIndex: 1000,
   },
   loadingText: {
-    marginTop: 10,
-    color: '#666',
+    marginTop: 16,
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '500',
+    textAlign: 'center',
   },
   buttonContainer: {
     gap: 12,

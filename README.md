@@ -24,6 +24,10 @@ A high-performance React Native library for image preprocessing optimized for ML
 - 🖼️ **Letterbox Padding**: YOLO-style letterbox preprocessing with reverse coordinate transform
 - 🎨 **Drawing/Visualization**: Draw boxes, keypoints, masks, and heatmaps for debugging
 - 🎬 **Video Frame Extraction**: Extract frames from videos at timestamps, intervals, or evenly-spaced for temporal ML models
+- 🔲 **Grid/Patch Extraction**: Extract image patches in grid patterns for sliding window inference
+- 🎲 **Random Crop with Seed**: Reproducible random crops for data augmentation pipelines
+- ✅ **Tensor Validation**: Validate tensor shapes, dtypes, and value ranges before inference
+- 📦 **Batch Assembly**: Combine multiple images into NCHW/NHWC batch tensors
 
 ## Installation
 
@@ -453,6 +457,178 @@ const crops = await tenCrop(
 
 console.log(crops.cropCount); // 10
 ```
+
+#### `extractGrid(source, gridOptions, pixelOptions?)`
+
+Extract image patches in a grid pattern. Useful for sliding window detection, image tiling, and patch-based models.
+
+```typescript
+import { extractGrid } from 'react-native-vision-utils';
+
+// Extract 3x3 grid of patches
+const result = await extractGrid(
+  { type: 'file', value: '/path/to/image.jpg' },
+  {
+    columns: 3,      // Number of columns
+    rows: 3,         // Number of rows
+    overlap: 0,      // Overlap in pixels (optional)
+    overlapPercent: 0.1, // Or overlap as percentage (optional)
+    includePartial: false, // Include edge patches smaller than full size
+  },
+  {
+    colorFormat: 'rgb',
+    normalization: { preset: 'scale' },
+  }
+);
+
+console.log(result.patchCount); // 9
+console.log(result.patchWidth);  // Width of each patch
+console.log(result.patchHeight); // Height of each patch
+result.patches.forEach((patch) => {
+  console.log(`Patch [${patch.row},${patch.column}] at (${patch.x},${patch.y}): ${patch.width}x${patch.height}`);
+  console.log(patch.data); // Pixel data for this patch
+});
+```
+
+**Options:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `columns` | number | required | Number of columns in the grid |
+| `rows` | number | required | Number of rows in the grid |
+| `overlap` | number | 0 | Overlap between patches in pixels |
+| `overlapPercent` | number | - | Overlap as percentage (0-1), alternative to `overlap` |
+| `includePartial` | boolean | false | Include edge patches that are smaller than full size |
+
+#### `randomCrop(source, cropOptions, pixelOptions?)`
+
+Extract random crops from an image with optional seed for reproducibility. Essential for data augmentation in training pipelines.
+
+```typescript
+import { randomCrop } from 'react-native-vision-utils';
+
+// Extract 5 random 64x64 crops with a fixed seed
+const result = await randomCrop(
+  { type: 'file', value: '/path/to/image.jpg' },
+  {
+    width: 64,
+    height: 64,
+    count: 5,
+    seed: 42, // For reproducibility (optional)
+  },
+  {
+    colorFormat: 'rgb',
+    normalization: { preset: 'imagenet' },
+  }
+);
+
+console.log(result.cropCount); // 5
+result.crops.forEach((crop, i) => {
+  console.log(`Crop ${i}: position (${crop.x},${crop.y}), size ${crop.width}x${crop.height}`);
+  console.log(`Seed: ${crop.seed}`); // Seed used for this specific crop
+  console.log(crop.data); // Pixel data for this crop
+});
+```
+
+**Options:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `width` | number | required | Width of each crop |
+| `height` | number | required | Height of each crop |
+| `count` | number | 1 | Number of random crops to extract |
+| `seed` | number | random | Seed for reproducible random positions |
+
+#### `validateTensor(data, shape, spec?)`
+
+Validate tensor data against a specification. Pure TypeScript function for checking tensor shapes, dtypes, and value ranges before inference.
+
+```typescript
+import { validateTensor } from 'react-native-vision-utils';
+
+const tensorData = new Float32Array(1 * 3 * 224 * 224);
+// ... fill with data
+
+const validation = validateTensor(
+  tensorData,
+  [1, 3, 224, 224], // Actual shape of your data
+  {
+    shape: [1, 3, 224, 224], // Expected shape (-1 as wildcard)
+    dtype: 'float32',
+    minValue: 0,
+    maxValue: 1,
+  }
+);
+
+if (validation.isValid) {
+  console.log('Tensor is valid for inference');
+} else {
+  console.log('Validation issues:', validation.issues);
+}
+
+// Also provides statistics
+console.log(validation.actualMin);
+console.log(validation.actualMax);
+console.log(validation.actualMean);
+console.log(validation.actualShape);
+```
+
+**TensorSpec Options:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `shape` | number[] | Expected shape (use -1 as wildcard for any dimension) |
+| `dtype` | string | Expected dtype ('float32', 'int32', 'uint8', etc.) |
+| `minValue` | number | Minimum allowed value (optional) |
+| `maxValue` | number | Maximum allowed value (optional) |
+| `channels` | number | Expected number of channels (optional) |
+
+**Result:**
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `isValid` | boolean | Whether tensor passes all validations |
+| `issues` | string[] | List of validation issues found |
+| `actualShape` | number[] | Actual shape of the tensor |
+| `actualMin` | number | Minimum value in tensor |
+| `actualMax` | number | Maximum value in tensor |
+| `actualMean` | number | Mean value of tensor |
+
+#### `assembleBatch(pixelResults, options?)`
+
+Assemble multiple PixelDataResults into a single batch tensor. Pure TypeScript function for preparing batched inference.
+
+```typescript
+import { getPixelData, assembleBatch, MODEL_PRESETS } from 'react-native-vision-utils';
+
+// Process multiple images
+const images = ['/path/to/1.jpg', '/path/to/2.jpg', '/path/to/3.jpg'];
+const results = await Promise.all(
+  images.map((path) =>
+    getPixelData({
+      source: { type: 'file', value: path },
+      ...MODEL_PRESETS.mobilenet,
+    })
+  )
+);
+
+// Assemble into batch
+const batch = assembleBatch(results, {
+  layout: 'nchw', // or 'nhwc'
+  padToSize: 4,   // Pad batch to size 4 (optional)
+});
+
+console.log(batch.shape);     // [3, 3, 224, 224] for NCHW
+console.log(batch.batchSize); // 3 (or 4 if padded)
+console.log(batch.data);      // Combined Float32Array
+```
+
+**Options:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `layout` | 'nchw' \| 'nhwc' | 'nchw' | Output batch layout |
+| `padToSize` | number | - | Pad batch to this size with zeros (optional) |
 
 ### Tensor Operations
 
