@@ -250,6 +250,131 @@ export interface Spec extends TurboModule {
     pixelFormat: string
   ): Promise<Object>;
 
+  // ==========================================================================
+  // Bounding Box Methods
+  // ==========================================================================
+
+  /**
+   * Convert bounding boxes between formats (xyxy, xywh, cxcywh)
+   * @param boxes - Array of boxes (each box is [a, b, c, d])
+   * @param sourceFormat - Input format: 'xyxy' | 'xywh' | 'cxcywh'
+   * @param targetFormat - Output format: 'xyxy' | 'xywh' | 'cxcywh'
+   * @returns Promise resolving to converted boxes
+   */
+  convertBoxFormat(
+    boxes: number[][],
+    sourceFormat: string,
+    targetFormat: string
+  ): Promise<Object>;
+
+  /**
+   * Scale bounding boxes from one image size to another
+   * @param boxes - Array of boxes
+   * @param options - Scale options with source/target dimensions
+   * @returns Promise resolving to scaled boxes
+   */
+  scaleBoxes(boxes: number[][], options: Object): Promise<Object>;
+
+  /**
+   * Clip bounding boxes to image boundaries
+   * @param boxes - Array of boxes
+   * @param width - Image width
+   * @param height - Image height
+   * @param format - Box format (default: 'xyxy')
+   * @returns Promise resolving to clipped boxes
+   */
+  clipBoxes(
+    boxes: number[][],
+    width: number,
+    height: number,
+    format: string
+  ): Promise<Object>;
+
+  /**
+   * Calculate IoU between two bounding boxes
+   * @param box1 - First box
+   * @param box2 - Second box
+   * @param format - Box format (default: 'xyxy')
+   * @returns Promise resolving to IoU value
+   */
+  calculateIoU(box1: number[], box2: number[], format: string): Promise<Object>;
+
+  /**
+   * Apply Non-Maximum Suppression to filter overlapping detections
+   * @param detections - Array of detections with box and score
+   * @param options - NMS options (iouThreshold, scoreThreshold, maxDetections, format)
+   * @returns Promise resolving to NMS result with indices and filtered detections
+   */
+  nonMaxSuppression(detections: Object[], options: Object): Promise<Object>;
+
+  // ==========================================================================
+  // Letterbox Methods
+  // ==========================================================================
+
+  /**
+   * Apply letterbox padding to an image (for YOLO-style models)
+   * @param source - Image source
+   * @param options - Letterbox options (targetWidth, targetHeight, padColor, etc.)
+   * @returns Promise resolving to letterboxed image with transform info
+   */
+  letterbox(source: Object, options: Object): Promise<Object>;
+
+  /**
+   * Reverse letterbox transformation on bounding boxes
+   * @param boxes - Array of boxes in letterboxed coordinates
+   * @param options - Options with scale, offset, originalSize, format
+   * @returns Promise resolving to boxes in original image coordinates
+   */
+  reverseLetterbox(boxes: number[][], options: Object): Promise<Object>;
+
+  // ==========================================================================
+  // Drawing/Visualization Methods
+  // ==========================================================================
+
+  /**
+   * Draw bounding boxes on an image
+   * @param source - Image source
+   * @param boxes - Array of drawable boxes with labels and colors
+   * @param options - Drawing options (lineWidth, fontSize, etc.)
+   * @returns Promise resolving to annotated image
+   */
+  drawBoxes(source: Object, boxes: Object[], options: Object): Promise<Object>;
+
+  /**
+   * Draw keypoints on an image (for pose estimation)
+   * @param source - Image source
+   * @param keypoints - Array of keypoints with x, y, confidence
+   * @param options - Drawing options (pointRadius, skeleton, etc.)
+   * @returns Promise resolving to annotated image
+   */
+  drawKeypoints(
+    source: Object,
+    keypoints: Object[],
+    options: Object
+  ): Promise<Object>;
+
+  /**
+   * Overlay a segmentation mask on an image
+   * @param source - Image source
+   * @param mask - Mask data as flat array
+   * @param options - Overlay options (maskWidth, maskHeight, alpha, colorMap, etc.)
+   * @returns Promise resolving to composite image
+   */
+  overlayMask(source: Object, mask: number[], options: Object): Promise<Object>;
+
+  /**
+   * Overlay a heatmap on an image (for attention/CAM visualization)
+   * @param source - Image source
+   * @param heatmap - Heatmap data as flat array
+   * @param options - Overlay options (heatmapWidth, heatmapHeight, alpha, colorScheme, etc.)
+   * @returns Promise resolving to composite image
+   */
+  overlayHeatmap(
+    source: Object,
+    heatmap: number[],
+    options: Object
+  ): Promise<Object>;
+
   /**
    * Clear the pixel data cache
    */

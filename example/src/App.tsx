@@ -31,11 +31,24 @@ import {
   getDatasetInfo,
   getAvailableDatasets,
   processCameraFrame,
+  convertBoxFormat,
+  scaleBoxes,
+  clipBoxes,
+  calculateIoU,
+  nonMaxSuppression,
+  letterbox,
+  reverseLetterbox,
+  drawBoxes,
+  drawKeypoints,
+  overlayHeatmap,
   type PixelDataResult,
   type ColorFormat,
   type DataLayout,
   type NormalizationPreset,
   type LabelDataset,
+  type BoundingBox,
+  type Detection,
+  type DrawableBox,
 } from 'react-native-vision-utils';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -824,6 +837,438 @@ const App: React.FC = () => {
     }
   }, []);
 
+  // Test bounding box format conversion
+  const testBoxFormatConversion = useCallback(async () => {
+    setLoading(true);
+    try {
+      // Convert YOLO format (center x, center y, width, height) to corners (xyxy)
+      const cxcywhBoxes: BoundingBox[] = [
+        [320, 240, 100, 80], // center at (320, 240), size 100x80
+        [150, 150, 60, 60], // center at (150, 150), size 60x60
+      ];
+
+      const result = await convertBoxFormat(cxcywhBoxes, {
+        fromFormat: 'cxcywh',
+        toFormat: 'xyxy',
+      });
+
+      const boxStr = result.boxes
+        .map((b) => `[${b.map((v) => Number(v).toFixed(0)).join(', ')}]`)
+        .join('\n');
+
+      Alert.alert(
+        'Box Format Conversion',
+        `Input (cxcywh):\n${cxcywhBoxes
+          .map((b) => `[${b.join(', ')}]`)
+          .join('\n')}\n\n` +
+          `Output (xyxy):\n${boxStr}\n\n` +
+          `Time: ${Number(result.processingTimeMs).toFixed(2)}ms`
+      );
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      Alert.alert('Error', errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Test bounding box scaling
+  const testBoxScaling = useCallback(async () => {
+    setLoading(true);
+    try {
+      // Scale boxes from 640x640 model input to 1920x1080 original
+      const boxes: BoundingBox[] = [
+        [100, 100, 200, 200],
+        [300, 200, 400, 350],
+      ];
+
+      const result = await scaleBoxes(boxes, {
+        fromWidth: 640,
+        fromHeight: 640,
+        toWidth: 1920,
+        toHeight: 1080,
+        format: 'xyxy',
+      });
+
+      const originalStr = boxes.map((b) => `[${b.join(', ')}]`).join('\n');
+      const scaledStr = result.boxes
+        .map((b) => `[${b.map((v) => Number(v).toFixed(0)).join(', ')}]`)
+        .join('\n');
+
+      Alert.alert(
+        'Box Scaling',
+        `640x640 → 1920x1080\n\n` +
+          `Original:\n${originalStr}\n\n` +
+          `Scaled:\n${scaledStr}\n\n` +
+          `Time: ${Number(result.processingTimeMs).toFixed(2)}ms`
+      );
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      Alert.alert('Error', errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Test IoU calculation
+  const testIoUCalculation = useCallback(async () => {
+    setLoading(true);
+    try {
+      const box1: BoundingBox = [100, 100, 200, 200];
+      const box2: BoundingBox = [150, 150, 250, 250];
+
+      const result = await calculateIoU(box1, box2, 'xyxy');
+
+      Alert.alert(
+        'IoU Calculation',
+        `Box 1: [${box1.join(', ')}]\n` +
+          `Box 2: [${box2.join(', ')}]\n\n` +
+          `IoU: ${(Number(result.iou) * 100).toFixed(1)}%\n` +
+          `Intersection: ${Number(result.intersection).toFixed(0)} px²\n` +
+          `Union: ${Number(result.union).toFixed(0)} px²\n\n` +
+          `Time: ${Number(result.processingTimeMs).toFixed(2)}ms`
+      );
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      Alert.alert('Error', errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Test Non-Maximum Suppression
+  const testNMS = useCallback(async () => {
+    setLoading(true);
+    try {
+      const detections: Detection[] = [
+        { box: [100, 100, 200, 200], score: 0.9, classIndex: 0 },
+        { box: [110, 110, 210, 210], score: 0.8, classIndex: 0 }, // Overlaps with first
+        { box: [300, 300, 400, 400], score: 0.7, classIndex: 1 },
+        { box: [305, 305, 405, 405], score: 0.6, classIndex: 1 }, // Overlaps with third
+        { box: [500, 100, 600, 200], score: 0.5, classIndex: 0 },
+      ];
+
+      const result = await nonMaxSuppression(detections, {
+        iouThreshold: 0.5,
+        scoreThreshold: 0.3,
+        maxDetections: 100,
+      });
+
+      Alert.alert(
+        'Non-Maximum Suppression',
+        `Input: ${detections.length} detections\n` +
+          `Output: ${result.detections.length} detections\n\n` +
+          `Kept indices: [${result.indices.join(', ')}]\n` +
+          `Scores: [${result.detections
+            .map((d) => Number(d.score).toFixed(2))
+            .join(', ')}]\n\n` +
+          `Time: ${Number(result.processingTimeMs).toFixed(2)}ms`
+      );
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      Alert.alert('Error', errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Test letterbox padding
+  const testLetterbox = useCallback(async () => {
+    setLoading(true);
+    try {
+      const result = await letterbox(
+        { type: 'url', value: currentImage },
+        {
+          targetWidth: 640,
+          targetHeight: 640,
+          fillColor: [114, 114, 114], // YOLO gray
+        }
+      );
+
+      if (result.imageBase64) {
+        setProcessedImageUri(`data:image/jpeg;base64,${result.imageBase64}`);
+      }
+
+      const info = result.letterboxInfo;
+      Alert.alert(
+        'Letterbox Padding',
+        `Original: ${info.originalSize[0]}x${info.originalSize[1]}\n` +
+          `Letterboxed: ${info.letterboxedSize[0]}x${info.letterboxedSize[1]}\n` +
+          `Scale: ${Number(info.scale).toFixed(4)}\n` +
+          `Offset: [${info.offset
+            .map((o) => Number(o).toFixed(1))
+            .join(', ')}]\n\n` +
+          `Time: ${
+            result.processingTimeMs
+              ? Number(result.processingTimeMs).toFixed(2)
+              : 'N/A'
+          }ms`
+      );
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      Alert.alert('Error', errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentImage]);
+
+  // Test reverse letterbox
+  const testReverseLetterbox = useCallback(async () => {
+    setLoading(true);
+    try {
+      // First letterbox the image
+      const lb = await letterbox(
+        { type: 'url', value: currentImage },
+        { targetWidth: 640, targetHeight: 640 }
+      );
+
+      // Simulate detections in letterboxed space
+      const boxesInLetterbox: BoundingBox[] = [
+        [100, 150, 200, 250],
+        [400, 300, 500, 450],
+      ];
+
+      // Reverse transform
+      const result = await reverseLetterbox(boxesInLetterbox, {
+        scale: lb.letterboxInfo.scale,
+        offset: lb.letterboxInfo.offset,
+        originalSize: lb.letterboxInfo.originalSize,
+        format: 'xyxy',
+      });
+
+      const letterboxStr = boxesInLetterbox
+        .map((b) => `[${b.join(', ')}]`)
+        .join('\n');
+      const originalStr = result.boxes
+        .map((b) => `[${b.map((v) => Number(v).toFixed(0)).join(', ')}]`)
+        .join('\n');
+
+      Alert.alert(
+        'Reverse Letterbox',
+        `Boxes in 640x640 space:\n${letterboxStr}\n\n` +
+          `Boxes in original space:\n${originalStr}\n\n` +
+          `Time: ${Number(result.processingTimeMs).toFixed(2)}ms`
+      );
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      Alert.alert('Error', errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentImage]);
+
+  // Test drawing boxes
+  const testDrawBoxes = useCallback(async () => {
+    setLoading(true);
+    try {
+      // First get the image as base64
+      const metadata = await getImageMetadata({
+        type: 'url',
+        value: currentImage,
+      });
+
+      // Draw some sample detections
+      const boxes: DrawableBox[] = [
+        {
+          box: [50, 50, 150, 150],
+          label: 'person',
+          score: 0.95,
+          classIndex: 0,
+        },
+        {
+          box: [180, 80, 280, 200],
+          label: 'dog',
+          score: 0.87,
+          classIndex: 16,
+        },
+        {
+          box: [300, 100, 380, 180],
+          label: 'cat',
+          score: 0.72,
+          classIndex: 15,
+          color: [255, 100, 100], // Custom color
+        },
+      ];
+
+      const result = await drawBoxes(
+        { type: 'url', value: currentImage },
+        boxes,
+        {
+          lineWidth: 3,
+          fontSize: 14,
+          drawLabels: true,
+          labelBackgroundAlpha: 0.7,
+        }
+      );
+
+      if (result.imageBase64) {
+        setProcessedImageUri(`data:image/jpeg;base64,${result.imageBase64}`);
+      }
+
+      Alert.alert(
+        'Draw Boxes',
+        `Drew ${boxes.length} boxes on ${metadata.width}x${metadata.height} image\n\n` +
+          `Time: ${Number(result.processingTimeMs).toFixed(2)}ms`
+      );
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      Alert.alert('Error', errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentImage]);
+
+  // Test drawing keypoints
+  const testDrawKeypoints = useCallback(async () => {
+    setLoading(true);
+    try {
+      // Sample keypoints (simplified pose)
+      const keypoints = [
+        { x: 200, y: 80, confidence: 0.95 }, // 0: nose
+        { x: 190, y: 70, confidence: 0.9 }, // 1: left_eye
+        { x: 210, y: 70, confidence: 0.9 }, // 2: right_eye
+        { x: 180, y: 75, confidence: 0.85 }, // 3: left_ear
+        { x: 220, y: 75, confidence: 0.85 }, // 4: right_ear
+        { x: 160, y: 120, confidence: 0.88 }, // 5: left_shoulder
+        { x: 240, y: 120, confidence: 0.88 }, // 6: right_shoulder
+        { x: 140, y: 180, confidence: 0.82 }, // 7: left_elbow
+        { x: 260, y: 180, confidence: 0.82 }, // 8: right_elbow
+        { x: 130, y: 240, confidence: 0.75 }, // 9: left_wrist
+        { x: 270, y: 240, confidence: 0.75 }, // 10: right_wrist
+        { x: 180, y: 200, confidence: 0.9 }, // 11: left_hip
+        { x: 220, y: 200, confidence: 0.9 }, // 12: right_hip
+      ];
+
+      // COCO skeleton connections
+      const skeleton = [
+        { from: 0, to: 1 }, // nose to left_eye
+        { from: 0, to: 2 }, // nose to right_eye
+        { from: 1, to: 3 }, // left_eye to left_ear
+        { from: 2, to: 4 }, // right_eye to right_ear
+        { from: 5, to: 6 }, // left_shoulder to right_shoulder
+        { from: 5, to: 7 }, // left_shoulder to left_elbow
+        { from: 6, to: 8 }, // right_shoulder to right_elbow
+        { from: 7, to: 9 }, // left_elbow to left_wrist
+        { from: 8, to: 10 }, // right_elbow to right_wrist
+        { from: 5, to: 11 }, // left_shoulder to left_hip
+        { from: 6, to: 12 }, // right_shoulder to right_hip
+        { from: 11, to: 12 }, // left_hip to right_hip
+      ];
+
+      const result = await drawKeypoints(
+        { type: 'url', value: currentImage },
+        keypoints,
+        {
+          pointRadius: 6,
+          lineWidth: 2,
+          minConfidence: 0.5,
+          skeleton,
+        }
+      );
+
+      if (result.imageBase64) {
+        setProcessedImageUri(`data:image/jpeg;base64,${result.imageBase64}`);
+      }
+
+      Alert.alert(
+        'Draw Keypoints',
+        `Drew ${result.pointsDrawn} keypoints and ${result.connectionsDrawn} connections\n\n` +
+          `Time: ${Number(result.processingTimeMs).toFixed(2)}ms`
+      );
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      Alert.alert('Error', errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentImage]);
+
+  // Test heatmap overlay
+  const testHeatmapOverlay = useCallback(async () => {
+    setLoading(true);
+    try {
+      // Create a sample 14x14 attention heatmap (like ViT patches)
+      const heatmapWidth = 14;
+      const heatmapHeight = 14;
+      const heatmap = new Array(heatmapWidth * heatmapHeight).fill(0);
+
+      // Create a gaussian-like attention pattern in the center
+      const centerX = heatmapWidth / 2;
+      const centerY = heatmapHeight / 2;
+      for (let y = 0; y < heatmapHeight; y++) {
+        for (let x = 0; x < heatmapWidth; x++) {
+          const dx = x - centerX;
+          const dy = y - centerY;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          heatmap[y * heatmapWidth + x] = Math.exp(-(dist * dist) / 20);
+        }
+      }
+
+      const result = await overlayHeatmap(
+        { type: 'url', value: currentImage },
+        heatmap,
+        {
+          heatmapWidth,
+          heatmapHeight,
+          alpha: 0.5,
+          colorScheme: 'jet',
+        }
+      );
+
+      if (result.imageBase64) {
+        setProcessedImageUri(`data:image/jpeg;base64,${result.imageBase64}`);
+      }
+
+      Alert.alert(
+        'Heatmap Overlay',
+        `Overlaid ${heatmapWidth}x${heatmapHeight} heatmap with jet colorscheme\n\n` +
+          `Time: ${Number(result.processingTimeMs).toFixed(2)}ms`
+      );
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      Alert.alert('Error', errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentImage]);
+
+  // Test clip boxes
+  const testClipBoxes = useCallback(async () => {
+    setLoading(true);
+    try {
+      // Boxes that extend beyond boundaries
+      const boxes: BoundingBox[] = [
+        [-20, 50, 150, 200], // Extends left
+        [100, -10, 250, 150], // Extends top
+        [500, 300, 700, 500], // Extends right/bottom (assuming 640x480)
+      ];
+
+      const result = await clipBoxes(boxes, {
+        width: 640,
+        height: 480,
+        format: 'xyxy',
+      });
+
+      const originalStr = boxes.map((b) => `[${b.join(', ')}]`).join('\n');
+      const clippedStr = result.boxes
+        .map((b) => `[${b.map((v) => Number(v).toFixed(0)).join(', ')}]`)
+        .join('\n');
+
+      Alert.alert(
+        'Clip Boxes',
+        `Image: 640x480\n\n` +
+          `Original (out of bounds):\n${originalStr}\n\n` +
+          `Clipped:\n${clippedStr}\n\n` +
+          `Time: ${Number(result.processingTimeMs).toFixed(2)}ms`
+      );
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      Alert.alert('Error', errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const clearResults = useCallback(() => {
     setResults([]);
   }, []);
@@ -1115,6 +1560,138 @@ const App: React.FC = () => {
           </TouchableOpacity>
         </View>
 
+        {/* Bounding Box Utilities */}
+        <Text style={styles.sectionTitle}>📦 Bounding Box Utilities</Text>
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity
+            style={[
+              styles.button,
+              styles.boxButton,
+              loading && styles.buttonDisabled,
+            ]}
+            onPress={testBoxFormatConversion}
+            disabled={loading}
+          >
+            <Text style={styles.buttonText}>Format Conversion</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.button,
+              styles.boxButton,
+              loading && styles.buttonDisabled,
+            ]}
+            onPress={testBoxScaling}
+            disabled={loading}
+          >
+            <Text style={styles.buttonText}>Scale Boxes</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.button,
+              styles.boxButton,
+              loading && styles.buttonDisabled,
+            ]}
+            onPress={testClipBoxes}
+            disabled={loading}
+          >
+            <Text style={styles.buttonText}>Clip Boxes</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.button,
+              styles.boxButton,
+              loading && styles.buttonDisabled,
+            ]}
+            onPress={testIoUCalculation}
+            disabled={loading}
+          >
+            <Text style={styles.buttonText}>Calculate IoU</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.button,
+              styles.boxButton,
+              loading && styles.buttonDisabled,
+            ]}
+            onPress={testNMS}
+            disabled={loading}
+          >
+            <Text style={styles.buttonText}>Non-Max Suppression</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Letterbox Padding */}
+        <Text style={styles.sectionTitle}>🖼️ Letterbox Padding</Text>
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity
+            style={[
+              styles.button,
+              styles.letterboxButton,
+              loading && styles.buttonDisabled,
+            ]}
+            onPress={testLetterbox}
+            disabled={loading}
+          >
+            <Text style={styles.buttonText}>Apply Letterbox</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.button,
+              styles.letterboxButton,
+              loading && styles.buttonDisabled,
+            ]}
+            onPress={testReverseLetterbox}
+            disabled={loading}
+          >
+            <Text style={styles.buttonText}>Reverse Letterbox</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Drawing & Visualization */}
+        <Text style={styles.sectionTitle}>🎨 Drawing & Visualization</Text>
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity
+            style={[
+              styles.button,
+              styles.drawButton,
+              loading && styles.buttonDisabled,
+            ]}
+            onPress={testDrawBoxes}
+            disabled={loading}
+          >
+            <Text style={styles.buttonText}>Draw Boxes</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.button,
+              styles.drawButton,
+              loading && styles.buttonDisabled,
+            ]}
+            onPress={testDrawKeypoints}
+            disabled={loading}
+          >
+            <Text style={styles.buttonText}>Draw Keypoints</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.button,
+              styles.drawButton,
+              loading && styles.buttonDisabled,
+            ]}
+            onPress={testHeatmapOverlay}
+            disabled={loading}
+          >
+            <Text style={styles.buttonText}>Heatmap Overlay</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Cache Management */}
         <Text style={styles.sectionTitle}>💾 Cache Management</Text>
         <View style={styles.buttonContainer}>
@@ -1257,6 +1834,15 @@ const styles = StyleSheet.create({
   },
   cameraButton: {
     backgroundColor: '#64D2FF',
+  },
+  boxButton: {
+    backgroundColor: '#FF6B35',
+  },
+  letterboxButton: {
+    backgroundColor: '#7B68EE',
+  },
+  drawButton: {
+    backgroundColor: '#20B2AA',
   },
   cacheButton: {
     backgroundColor: '#5AC8FA',

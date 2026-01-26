@@ -1398,3 +1398,413 @@ export interface PreparedOptions
   cache?: CacheOptions;
   modelPreset?: ModelPreset;
 }
+
+// =============================================================================
+// Bounding Box Types
+// =============================================================================
+
+/**
+ * Bounding box format types
+ * - 'xyxy': [x1, y1, x2, y2] - top-left and bottom-right corners
+ * - 'xywh': [x, y, width, height] - top-left corner and dimensions
+ * - 'cxcywh': [center_x, center_y, width, height] - center and dimensions (YOLO format)
+ */
+export type BoxFormat = 'xyxy' | 'xywh' | 'cxcywh';
+
+/**
+ * A single bounding box as 4 numbers
+ */
+export type BoundingBox = [number, number, number, number];
+
+/**
+ * Options for converting bounding box format
+ */
+export interface ConvertBoxFormatOptions {
+  /** Input format of the boxes */
+  fromFormat: BoxFormat;
+  /** Target format to convert to */
+  toFormat: BoxFormat;
+}
+
+/**
+ * Result of box format conversion
+ */
+export interface ConvertBoxFormatResult {
+  /** Converted boxes */
+  boxes: BoundingBox[];
+  /** Output format */
+  format: BoxFormat;
+  /** Processing time in milliseconds */
+  processingTimeMs: number;
+}
+
+/**
+ * Options for scaling bounding boxes
+ */
+export interface ScaleBoxesOptions {
+  /** Original image width that boxes were detected on */
+  fromWidth: number;
+  /** Original image height that boxes were detected on */
+  fromHeight: number;
+  /** Target image width to scale boxes to */
+  toWidth: number;
+  /** Target image height to scale boxes to */
+  toHeight: number;
+  /** Format of the boxes (default: 'xyxy') */
+  format?: BoxFormat;
+  /** Whether to clip boxes to image bounds (default: true) */
+  clip?: boolean;
+}
+
+/**
+ * Result of box scaling operation
+ */
+export interface ScaleBoxesResult {
+  /** Scaled boxes */
+  boxes: BoundingBox[];
+  /** Box format */
+  format: BoxFormat;
+  /** Processing time in milliseconds */
+  processingTimeMs: number;
+}
+
+/**
+ * Options for clipping bounding boxes
+ */
+export interface ClipBoxesOptions {
+  /** Image width to clip to */
+  width: number;
+  /** Image height to clip to */
+  height: number;
+  /** Format of the boxes (default: 'xyxy') */
+  format?: BoxFormat;
+  /** Remove boxes that become invalid after clipping (default: false) */
+  removeInvalid?: boolean;
+}
+
+/**
+ * Result of box clipping operation
+ */
+export interface ClipBoxesResult {
+  /** Clipped boxes */
+  boxes: BoundingBox[];
+  /** Box format */
+  format: BoxFormat;
+  /** Number of boxes removed (if removeInvalid was true) */
+  removedCount: number;
+  /** Processing time in milliseconds */
+  processingTimeMs: number;
+}
+
+/**
+ * Options for Non-Maximum Suppression
+ */
+export interface NMSOptions {
+  /** IoU threshold for suppression (default: 0.5) */
+  iouThreshold?: number;
+  /** Minimum confidence score to keep (default: 0.25) */
+  scoreThreshold?: number;
+  /** Maximum number of boxes to keep (default: 100) */
+  maxDetections?: number;
+  /** Format of the boxes (default: 'xyxy') */
+  format?: BoxFormat;
+}
+
+/**
+ * A detection with box, score, and optional class
+ */
+export interface Detection {
+  /** Bounding box coordinates */
+  box: BoundingBox;
+  /** Confidence score */
+  score: number;
+  /** Class index (optional) */
+  classIndex?: number;
+  /** Class label (optional) */
+  label?: string;
+}
+
+/**
+ * Result of NMS operation
+ */
+export interface NMSResult {
+  /** Indices of kept detections in original array */
+  indices: number[];
+  /** Filtered detections */
+  detections: Detection[];
+  /** Number of suppressed detections */
+  suppressedCount: number;
+  /** Processing time in milliseconds */
+  processingTimeMs: number;
+}
+
+/**
+ * Result of IoU calculation
+ */
+export interface IoUResult {
+  /** IoU value between 0 and 1 */
+  iou: number;
+  /** Intersection area */
+  intersection: number;
+  /** Union area */
+  union: number;
+  /** Processing time in milliseconds */
+  processingTimeMs: number;
+}
+
+// =============================================================================
+// Letterbox Types
+// =============================================================================
+
+/**
+ * Options for letterbox padding
+ */
+export interface LetterboxOptions {
+  /** Target width */
+  targetWidth: number;
+  /** Target height */
+  targetHeight: number;
+  /** Fill/Padding color [R, G, B] (default: [114, 114, 114] - YOLO gray) */
+  fillColor?: [number, number, number];
+  /** Whether to scale up if image is smaller than target (default: true) */
+  scaleUp?: boolean;
+  /** Whether to use stride-compatible sizing (default: false) */
+  autoStride?: boolean;
+  /** Stride size when autoStride is enabled (default: 32) */
+  stride?: number;
+  /** Whether to center the image (default: true) */
+  center?: boolean;
+}
+
+/**
+ * Result of letterbox operation
+ */
+export interface LetterboxResult {
+  /** Processed image as base64 */
+  imageBase64: string;
+  /** Output width */
+  width: number;
+  /** Output height */
+  height: number;
+  /** Scale factor applied */
+  scale: number;
+  /** Padding added [padLeft, padTop, padRight, padBottom] */
+  padding: [number, number, number, number];
+  /** Offset applied [offsetX, offsetY] */
+  offset: [number, number];
+  /** Original image dimensions [width, height] */
+  originalSize: [number, number];
+  /** Info for reversing the transformation */
+  letterboxInfo: LetterboxInfo;
+  /** Processing time in milliseconds */
+  processingTimeMs: number;
+}
+
+/**
+ * Info for reversing letterbox transformation
+ */
+export interface LetterboxInfo {
+  /** Scale factor applied */
+  scale: number;
+  /** Padding [padLeft, padTop, padRight, padBottom] */
+  padding: [number, number, number, number];
+  /** Offset [offsetX, offsetY] */
+  offset: [number, number];
+  /** Original image dimensions [width, height] */
+  originalSize: [number, number];
+  /** Letterboxed dimensions [width, height] */
+  letterboxedSize: [number, number];
+}
+
+/**
+ * Options for reversing letterbox on boxes
+ */
+export interface ReverseLetterboxOptions {
+  /** Scale factor from letterbox */
+  scale: number;
+  /** Offset [offsetX, offsetY] from letterbox */
+  offset: [number, number];
+  /** Original image dimensions [width, height] */
+  originalSize: [number, number];
+  /** Format of the boxes (default: 'xyxy') */
+  format?: BoxFormat;
+  /** Whether to clip to original image bounds (default: true) */
+  clip?: boolean;
+}
+
+/**
+ * Result of reverse letterbox operation
+ */
+export interface ReverseLetterboxResult {
+  /** Boxes transformed to original image coordinates */
+  boxes: BoundingBox[];
+  /** Box format */
+  format: BoxFormat;
+  /** Processing time in milliseconds */
+  processingTimeMs: number;
+}
+
+// =============================================================================
+// Drawing/Visualization Types
+// =============================================================================
+
+/**
+ * Options for drawing bounding boxes on images
+ */
+export interface DrawBoxesOptions {
+  /** Line thickness in pixels (default: 2) */
+  lineWidth?: number;
+  /** Default box color [R, G, B] (used if no per-box color specified) */
+  defaultColor?: [number, number, number];
+  /** Whether to draw labels (default: true if labels provided) */
+  drawLabels?: boolean;
+  /** Font size for labels (default: 12) */
+  fontSize?: number;
+  /** Label background alpha (0-1, default: 0.7) */
+  labelBackgroundAlpha?: number;
+  /** Label text color [R, G, B] (default: [255, 255, 255]) */
+  labelColor?: [number, number, number];
+  /** Quality for JPEG output 0-100 (default: 90) */
+  quality?: number;
+}
+
+/**
+ * A box to draw with style options
+ */
+export interface DrawableBox {
+  /** Bounding box coordinates in xyxy format */
+  box: BoundingBox;
+  /** Optional label text */
+  label?: string;
+  /** Optional confidence score */
+  score?: number;
+  /** Optional color override [R, G, B] */
+  color?: [number, number, number];
+  /** Optional class index for auto-coloring */
+  classIndex?: number;
+}
+
+/**
+ * Result of draw operation
+ */
+export interface DrawResult {
+  /** Output image as base64 */
+  imageBase64: string;
+  /** Output width */
+  width: number;
+  /** Output height */
+  height: number;
+  /** Number of boxes drawn */
+  boxesDrawn?: number;
+  /** Number of points drawn (for keypoints) */
+  pointsDrawn?: number;
+  /** Processing time in milliseconds */
+  processingTimeMs: number;
+}
+
+/**
+ * Point for keypoint visualization
+ */
+export interface Keypoint {
+  /** X coordinate */
+  x: number;
+  /** Y coordinate */
+  y: number;
+  /** Confidence score (optional) */
+  confidence?: number;
+  /** Point name/label (optional) */
+  name?: string;
+}
+
+/**
+ * Skeleton connection for pose visualization
+ */
+export interface SkeletonConnection {
+  /** Start keypoint index */
+  from: number;
+  /** End keypoint index */
+  to: number;
+  /** Optional color [R, G, B] */
+  color?: [number, number, number];
+}
+
+/**
+ * Options for drawing keypoints
+ */
+export interface DrawKeypointsOptions {
+  /** Point radius in pixels (default: 4) */
+  pointRadius?: number;
+  /** Point colors: array of [R, G, B] per keypoint (default: auto) */
+  pointColors?: [number, number, number][];
+  /** Skeleton connections to draw */
+  skeleton?: SkeletonConnection[];
+  /** Line width for skeleton (default: 2) */
+  lineWidth?: number;
+  /** Minimum confidence to draw point (default: 0) */
+  minConfidence?: number;
+  /** Quality for JPEG output 0-100 (default: 90) */
+  quality?: number;
+}
+
+/**
+ * Result of keypoints draw operation
+ */
+export interface KeypointsDrawResult {
+  /** Output image as base64 */
+  imageBase64: string;
+  /** Output width */
+  width: number;
+  /** Output height */
+  height: number;
+  /** Number of points drawn */
+  pointsDrawn: number;
+  /** Number of skeleton connections drawn */
+  connectionsDrawn: number;
+  /** Processing time in milliseconds */
+  processingTimeMs: number;
+}
+
+/**
+ * Options for overlaying a segmentation mask
+ */
+export interface OverlayMaskOptions {
+  /** Mask width */
+  maskWidth: number;
+  /** Mask height */
+  maskHeight: number;
+  /** Mask alpha/opacity (0-1, default: 0.5) */
+  alpha?: number;
+  /** Color map: array of [R, G, B] colors for each class */
+  colorMap?: [number, number, number][];
+  /** Single color for binary masks [R, G, B] */
+  singleColor?: [number, number, number];
+  /** Whether mask values are class indices (true) or probabilities (false) */
+  isClassMask?: boolean;
+  /** Quality for JPEG output 0-100 (default: 90) */
+  quality?: number;
+}
+
+/**
+ * Heatmap color scheme
+ */
+export type HeatmapColorScheme = 'jet' | 'hot' | 'viridis';
+
+/**
+ * Options for drawing a heatmap overlay
+ */
+export interface OverlayHeatmapOptions {
+  /** Heatmap width */
+  heatmapWidth: number;
+  /** Heatmap height */
+  heatmapHeight: number;
+  /** Heatmap alpha/opacity (0-1, default: 0.5) */
+  alpha?: number;
+  /** Color scheme: 'jet' | 'hot' | 'viridis' (default: 'jet') */
+  colorScheme?: HeatmapColorScheme;
+  /** Min value for normalization (default: auto) */
+  minValue?: number;
+  /** Max value for normalization (default: auto) */
+  maxValue?: number;
+  /** Quality for JPEG output 0-100 (default: 90) */
+  quality?: number;
+}

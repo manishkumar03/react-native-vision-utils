@@ -278,10 +278,12 @@ struct GetPixelDataOptions {
 
 enum VisionUtilsError: Error {
     case invalidSource(String)
+    case invalidInput(String)
     case loadError(String)
     case fileNotFound(String)
     case permissionDenied(String)
     case processingError(String)
+    case processingFailed(String)
     case invalidRoi(String)
     case invalidResize(String)
     case invalidNormalization(String)
@@ -290,10 +292,12 @@ enum VisionUtilsError: Error {
     var code: String {
         switch self {
         case .invalidSource: return "INVALID_SOURCE"
+        case .invalidInput: return "INVALID_INPUT"
         case .loadError: return "LOAD_ERROR"
         case .fileNotFound: return "FILE_NOT_FOUND"
         case .permissionDenied: return "PERMISSION_DENIED"
         case .processingError: return "PROCESSING_ERROR"
+        case .processingFailed: return "PROCESSING_FAILED"
         case .invalidRoi: return "INVALID_ROI"
         case .invalidResize: return "INVALID_RESIZE"
         case .invalidNormalization: return "INVALID_NORMALIZATION"
@@ -304,10 +308,12 @@ enum VisionUtilsError: Error {
     var message: String {
         switch self {
         case .invalidSource(let msg),
+             .invalidInput(let msg),
              .loadError(let msg),
              .fileNotFound(let msg),
              .permissionDenied(let msg),
              .processingError(let msg),
+             .processingFailed(let msg),
              .invalidRoi(let msg),
              .invalidResize(let msg),
              .invalidNormalization(let msg),

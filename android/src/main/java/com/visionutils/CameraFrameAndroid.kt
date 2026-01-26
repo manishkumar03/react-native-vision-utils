@@ -85,7 +85,7 @@ object CameraFrameAndroid {
         var tensorData: DoubleArray = if (outputFormat == "grayscale") {
             rgbToGrayscale(rgbData, outputWidth, outputHeight)
         } else {
-            DoubleArray(rgbData.size) { rgbData[it].toDouble() and 0xFF.toDouble() }
+            DoubleArray(rgbData.size) { (rgbData[it].toInt() and 0xFF).toDouble() }
         }
 
         // Apply normalization

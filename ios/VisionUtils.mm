@@ -359,6 +359,193 @@
     }];
 }
 
+// MARK: - Bounding Box Utilities
+
+- (void)convertBoxFormat:(NSArray *)boxes
+            sourceFormat:(NSString *)sourceFormat
+            targetFormat:(NSString *)targetFormat
+                 resolve:(RCTPromiseResolveBlock)resolve
+                  reject:(RCTPromiseRejectBlock)reject {
+    [VisionUtilsBridge convertBoxFormat:boxes
+                           sourceFormat:sourceFormat
+                           targetFormat:targetFormat
+                                resolve:^(NSDictionary *result) {
+        resolve(result);
+    } reject:^(NSString *code, NSString *message) {
+        reject(code, message, nil);
+    }];
+}
+
+- (void)scaleBoxes:(NSArray *)boxes
+           options:(NSDictionary *)options
+           resolve:(RCTPromiseResolveBlock)resolve
+            reject:(RCTPromiseRejectBlock)reject {
+    [VisionUtilsBridge scaleBoxes:boxes
+                          options:options
+                          resolve:^(NSDictionary *result) {
+        resolve(result);
+    } reject:^(NSString *code, NSString *message) {
+        reject(code, message, nil);
+    }];
+}
+
+- (void)clipBoxes:(NSArray *)boxes
+            width:(double)width
+           height:(double)height
+           format:(NSString *)format
+          resolve:(RCTPromiseResolveBlock)resolve
+           reject:(RCTPromiseRejectBlock)reject {
+    [VisionUtilsBridge clipBoxes:boxes
+                           width:(NSInteger)width
+                          height:(NSInteger)height
+                          format:format
+                         resolve:^(NSDictionary *result) {
+        resolve(result);
+    } reject:^(NSString *code, NSString *message) {
+        reject(code, message, nil);
+    }];
+}
+
+- (void)calculateIoU:(NSArray *)box1
+                box2:(NSArray *)box2
+              format:(NSString *)format
+             resolve:(RCTPromiseResolveBlock)resolve
+              reject:(RCTPromiseRejectBlock)reject {
+    [VisionUtilsBridge calculateIoU:box1
+                               box2:box2
+                             format:format
+                            resolve:^(NSDictionary *result) {
+        resolve(result);
+    } reject:^(NSString *code, NSString *message) {
+        reject(code, message, nil);
+    }];
+}
+
+- (void)nonMaxSuppression:(NSArray *)detections
+                  options:(NSDictionary *)options
+                  resolve:(RCTPromiseResolveBlock)resolve
+                   reject:(RCTPromiseRejectBlock)reject {
+    // Extract boxes and scores from detections array
+    NSMutableArray *boxes = [NSMutableArray array];
+    NSMutableArray *scores = [NSMutableArray array];
+
+    for (NSDictionary *detection in detections) {
+        NSArray *box = detection[@"box"];
+        NSNumber *score = detection[@"score"];
+        if (box && score) {
+            [boxes addObject:box];
+            [scores addObject:score];
+        }
+    }
+
+    [VisionUtilsBridge nonMaxSuppression:boxes
+                                  scores:scores
+                                 options:options
+                                 resolve:^(NSDictionary *result) {
+        resolve(result);
+    } reject:^(NSString *code, NSString *message) {
+        reject(code, message, nil);
+    }];
+}
+
+// MARK: - Letterbox Utilities
+
+- (void)letterbox:(NSDictionary *)source
+          options:(NSDictionary *)options
+          resolve:(RCTPromiseResolveBlock)resolve
+           reject:(RCTPromiseRejectBlock)reject {
+    [VisionUtilsBridge letterbox:source
+                         options:options
+                         resolve:^(NSDictionary *result) {
+        resolve(result);
+    } reject:^(NSString *code, NSString *message) {
+        reject(code, message, nil);
+    }];
+}
+
+- (void)reverseLetterbox:(NSArray *)boxes
+                 options:(NSDictionary *)options
+                 resolve:(RCTPromiseResolveBlock)resolve
+                  reject:(RCTPromiseRejectBlock)reject {
+    [VisionUtilsBridge reverseLetterbox:boxes
+                                options:options
+                                resolve:^(NSDictionary *result) {
+        resolve(result);
+    } reject:^(NSString *code, NSString *message) {
+        reject(code, message, nil);
+    }];
+}
+
+// MARK: - Drawing Utilities
+
+- (void)drawBoxes:(NSDictionary *)source
+            boxes:(NSArray *)boxes
+          options:(NSDictionary *)options
+          resolve:(RCTPromiseResolveBlock)resolve
+           reject:(RCTPromiseRejectBlock)reject {
+    [VisionUtilsBridge drawBoxes:source
+                           boxes:boxes
+                         options:options
+                         resolve:^(NSDictionary *result) {
+        resolve(result);
+    } reject:^(NSString *code, NSString *message) {
+        reject(code, message, nil);
+    }];
+}
+
+- (void)drawKeypoints:(NSDictionary *)source
+            keypoints:(NSArray *)keypoints
+              options:(NSDictionary *)options
+              resolve:(RCTPromiseResolveBlock)resolve
+               reject:(RCTPromiseRejectBlock)reject {
+    [VisionUtilsBridge drawKeypoints:source
+                           keypoints:keypoints
+                             options:options
+                             resolve:^(NSDictionary *result) {
+        resolve(result);
+    } reject:^(NSString *code, NSString *message) {
+        reject(code, message, nil);
+    }];
+}
+
+- (void)overlayMask:(NSDictionary *)source
+               mask:(NSArray *)mask
+            options:(NSDictionary *)options
+            resolve:(RCTPromiseResolveBlock)resolve
+             reject:(RCTPromiseRejectBlock)reject {
+    double width = [[options objectForKey:@"maskWidth"] doubleValue];
+    double height = [[options objectForKey:@"maskHeight"] doubleValue];
+    [VisionUtilsBridge overlayMask:source
+                              mask:mask
+                             width:width
+                            height:height
+                           options:options
+                           resolve:^(NSDictionary *result) {
+        resolve(result);
+    } reject:^(NSString *code, NSString *message) {
+        reject(code, message, nil);
+    }];
+}
+
+- (void)overlayHeatmap:(NSDictionary *)source
+               heatmap:(NSArray *)heatmap
+               options:(NSDictionary *)options
+               resolve:(RCTPromiseResolveBlock)resolve
+                reject:(RCTPromiseRejectBlock)reject {
+    double width = [[options objectForKey:@"heatmapWidth"] doubleValue];
+    double height = [[options objectForKey:@"heatmapHeight"] doubleValue];
+    [VisionUtilsBridge overlayHeatmap:source
+                              heatmap:heatmap
+                                width:width
+                               height:height
+                              options:options
+                              resolve:^(NSDictionary *result) {
+        resolve(result);
+    } reject:^(NSString *code, NSString *message) {
+        reject(code, message, nil);
+    }];
+}
+
 // MARK: - TurboModule
 
 - (std::shared_ptr<facebook::react::TurboModule>)getTurboModule:

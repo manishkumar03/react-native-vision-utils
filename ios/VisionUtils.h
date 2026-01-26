@@ -144,4 +144,70 @@
                 resolve:(RCTPromiseResolveBlock)resolve
                  reject:(RCTPromiseRejectBlock)reject;
 
+// Bounding Box Utilities
+- (void)convertBoxFormat:(NSArray *)boxes
+            sourceFormat:(NSString *)sourceFormat
+            targetFormat:(NSString *)targetFormat
+                 resolve:(RCTPromiseResolveBlock)resolve
+                  reject:(RCTPromiseRejectBlock)reject;
+
+- (void)scaleBoxes:(NSArray *)boxes
+           options:(NSDictionary *)options
+           resolve:(RCTPromiseResolveBlock)resolve
+            reject:(RCTPromiseRejectBlock)reject;
+
+- (void)clipBoxes:(NSArray *)boxes
+            width:(double)width
+           height:(double)height
+           format:(NSString *)format
+          resolve:(RCTPromiseResolveBlock)resolve
+           reject:(RCTPromiseRejectBlock)reject;
+
+- (void)calculateIoU:(NSArray *)box1
+                box2:(NSArray *)box2
+              format:(NSString *)format
+             resolve:(RCTPromiseResolveBlock)resolve
+              reject:(RCTPromiseRejectBlock)reject;
+
+- (void)nonMaxSuppression:(NSArray *)detections
+                  options:(NSDictionary *)options
+                  resolve:(RCTPromiseResolveBlock)resolve
+                   reject:(RCTPromiseRejectBlock)reject;
+
+// Letterbox Utilities
+- (void)letterbox:(NSDictionary *)source
+          options:(NSDictionary *)options
+          resolve:(RCTPromiseResolveBlock)resolve
+           reject:(RCTPromiseRejectBlock)reject;
+
+- (void)reverseLetterbox:(NSArray *)boxes
+                 options:(NSDictionary *)options
+                 resolve:(RCTPromiseResolveBlock)resolve
+                  reject:(RCTPromiseRejectBlock)reject;
+
+// Drawing Utilities
+- (void)drawBoxes:(NSDictionary *)source
+            boxes:(NSArray *)boxes
+          options:(NSDictionary *)options
+          resolve:(RCTPromiseResolveBlock)resolve
+           reject:(RCTPromiseRejectBlock)reject;
+
+- (void)drawKeypoints:(NSDictionary *)source
+            keypoints:(NSArray *)keypoints
+              options:(NSDictionary *)options
+              resolve:(RCTPromiseResolveBlock)resolve
+               reject:(RCTPromiseRejectBlock)reject;
+
+- (void)overlayMask:(NSDictionary *)source
+               mask:(NSArray *)mask
+            options:(NSDictionary *)options
+            resolve:(RCTPromiseResolveBlock)resolve
+             reject:(RCTPromiseRejectBlock)reject;
+
+- (void)overlayHeatmap:(NSDictionary *)source
+               heatmap:(NSArray *)heatmap
+               options:(NSDictionary *)options
+               resolve:(RCTPromiseResolveBlock)resolve
+                reject:(RCTPromiseRejectBlock)reject;
+
 @end

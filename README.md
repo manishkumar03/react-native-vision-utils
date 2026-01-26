@@ -19,6 +19,9 @@ A high-performance React Native library for image preprocessing optimized for ML
 - 🎯 **Native Quantization**: Float→Int8/Uint8/Int16 with per-tensor and per-channel support (TFLite compatible)
 - 🏷️ **Label Database**: Built-in labels for COCO, ImageNet, VOC, CIFAR, Places365, ADE20K
 - 📹 **Camera Frame Utils**: Direct YUV/NV12/BGRA→tensor conversion for vision-camera integration
+- 📦 **Bounding Box Utilities**: Format conversion (xyxy/xywh/cxcywh), scaling, clipping, IoU, NMS
+- 🖼️ **Letterbox Padding**: YOLO-style letterbox preprocessing with reverse coordinate transform
+- 🎨 **Drawing/Visualization**: Draw boxes, keypoints, masks, and heatmaps for debugging
 
 ## Installation
 
@@ -472,8 +475,8 @@ const labelInfo = await getLabel(0, {
   dataset: 'coco',
   includeMetadata: true,
 });
-console.log(labelInfo.name);          // 'person'
-console.log(labelInfo.displayName);   // 'Person'
+console.log(labelInfo.name); // 'person'
+console.log(labelInfo.displayName); // 'Person'
 console.log(labelInfo.supercategory); // 'person'
 ```
 
@@ -494,7 +497,7 @@ const topLabels = await getTopLabels(scores, {
   includeMetadata: true,
 });
 
-topLabels.forEach(result => {
+topLabels.forEach((result) => {
   console.log(`${result.label}: ${(result.confidence * 100).toFixed(1)}%`);
 });
 // Output:
@@ -512,7 +515,7 @@ import { getAllLabels } from 'react-native-vision-utils';
 
 const cocoLabels = await getAllLabels('coco');
 console.log(cocoLabels.length); // 80
-console.log(cocoLabels[0]);     // 'person'
+console.log(cocoLabels[0]); // 'person'
 ```
 
 #### `getDatasetInfo(dataset)`
@@ -523,8 +526,8 @@ Get information about a dataset.
 import { getDatasetInfo } from 'react-native-vision-utils';
 
 const info = await getDatasetInfo('imagenet');
-console.log(info.name);        // 'imagenet'
-console.log(info.numClasses);  // 1000
+console.log(info.name); // 'imagenet'
+console.log(info.numClasses); // 1000
 console.log(info.description); // 'ImageNet ILSVRC 2012 classification labels'
 ```
 
@@ -541,17 +544,17 @@ const datasets = await getAvailableDatasets();
 
 ##### Available Datasets
 
-| Dataset      | Classes | Description                                     |
-| ------------ | ------- | ----------------------------------------------- |
-| `coco`       | 80      | COCO 2017 object detection labels               |
-| `coco91`     | 91      | COCO original labels with background            |
-| `imagenet`   | 1000    | ImageNet ILSVRC 2012 classification             |
-| `imagenet21k`| 21841   | ImageNet-21K full classification                |
-| `voc`        | 21      | PASCAL VOC with background                      |
-| `cifar10`    | 10      | CIFAR-10 classification                         |
-| `cifar100`   | 100     | CIFAR-100 classification                        |
-| `places365`  | 365     | Places365 scene recognition                     |
-| `ade20k`     | 150     | ADE20K semantic segmentation                    |
+| Dataset       | Classes | Description                          |
+| ------------- | ------- | ------------------------------------ |
+| `coco`        | 80      | COCO 2017 object detection labels    |
+| `coco91`      | 91      | COCO original labels with background |
+| `imagenet`    | 1000    | ImageNet ILSVRC 2012 classification  |
+| `imagenet21k` | 21841   | ImageNet-21K full classification     |
+| `voc`         | 21      | PASCAL VOC with background           |
+| `cifar10`     | 10      | CIFAR-10 classification              |
+| `cifar100`    | 100     | CIFAR-100 classification             |
+| `places365`   | 365     | Places365 scene recognition          |
+| `ade20k`      | 150     | ADE20K semantic segmentation         |
 
 ### Camera Frame Utilities
 
@@ -569,14 +572,14 @@ const result = await processCameraFrame(
   {
     width: 1920,
     height: 1080,
-    pixelFormat: 'yuv420',      // Camera format
+    pixelFormat: 'yuv420', // Camera format
     bytesPerRow: 1920,
     dataBase64: frameDataBase64, // Base64-encoded frame data
-    orientation: 'right',       // Device orientation
+    orientation: 'right', // Device orientation
     timestamp: Date.now(),
   },
   {
-    outputWidth: 224,           // Resize for model
+    outputWidth: 224, // Resize for model
     outputHeight: 224,
     normalize: true,
     outputFormat: 'rgb',
@@ -585,8 +588,8 @@ const result = await processCameraFrame(
   }
 );
 
-console.log(result.tensor);           // Normalized float array
-console.log(result.shape);            // [224, 224, 3]
+console.log(result.tensor); // Normalized float array
+console.log(result.shape); // [224, 224, 3]
 console.log(result.processingTimeMs); // Processing time
 ```
 
@@ -607,30 +610,30 @@ const rgbData = await convertYUVToRGB({
   outputFormat: 'rgb', // or 'base64'
 });
 
-console.log(rgbData.data);     // RGB pixel values
+console.log(rgbData.data); // RGB pixel values
 console.log(rgbData.channels); // 3
 ```
 
 ##### Supported Pixel Formats
 
-| Format   | Description                       |
-| -------- | --------------------------------- |
-| `yuv420` | YUV 4:2:0 planar                  |
-| `yuv422` | YUV 4:2:2 planar                  |
-| `nv12`   | NV12 (Y plane + interleaved UV)   |
-| `nv21`   | NV21 (Y plane + interleaved VU)   |
-| `bgra`   | BGRA 8-bit                        |
-| `rgba`   | RGBA 8-bit                        |
-| `rgb`    | RGB 8-bit                         |
+| Format   | Description                     |
+| -------- | ------------------------------- |
+| `yuv420` | YUV 4:2:0 planar                |
+| `yuv422` | YUV 4:2:2 planar                |
+| `nv12`   | NV12 (Y plane + interleaved UV) |
+| `nv21`   | NV21 (Y plane + interleaved VU) |
+| `bgra`   | BGRA 8-bit                      |
+| `rgba`   | RGBA 8-bit                      |
+| `rgb`    | RGB 8-bit                       |
 
 ##### Frame Orientations
 
-| Orientation | Description                    |
-| ----------- | ------------------------------ |
-| `up`        | No rotation (default)          |
-| `down`      | 180° rotation                  |
-| `left`      | 90° counter-clockwise          |
-| `right`     | 90° clockwise                  |
+| Orientation | Description           |
+| ----------- | --------------------- |
+| `up`        | No rotation (default) |
+| `down`      | 180° rotation         |
+| `left`      | 90° counter-clockwise |
+| `right`     | 90° clockwise         |
 
 ### Quantization (for TFLite and Other Quantized Models)
 
@@ -641,7 +644,11 @@ Native high-performance quantization for deploying to quantized ML models like T
 Quantize float data to int8/uint8/int16 format.
 
 ```typescript
-import { getPixelData, quantize, MODEL_PRESETS } from 'react-native-vision-utils';
+import {
+  getPixelData,
+  quantize,
+  MODEL_PRESETS,
+} from 'react-native-vision-utils';
 
 // Get float pixel data
 const result = await getPixelData({
@@ -653,15 +660,15 @@ const result = await getPixelData({
 const quantized = await quantize(result.data, {
   mode: 'per-tensor',
   dtype: 'uint8',
-  scale: 0.0078125,      // From TFLite model
-  zeroPoint: 128,        // From TFLite model
+  scale: 0.0078125, // From TFLite model
+  zeroPoint: 128, // From TFLite model
 });
 
-console.log(quantized.data);      // Uint8Array
-console.log(quantized.scale);     // 0.0078125
+console.log(quantized.data); // Uint8Array
+console.log(quantized.scale); // 0.0078125
 console.log(quantized.zeroPoint); // 128
-console.log(quantized.dtype);     // 'uint8'
-console.log(quantized.mode);      // 'per-tensor'
+console.log(quantized.dtype); // 'uint8'
+console.log(quantized.mode); // 'per-tensor'
 ```
 
 ##### Per-Channel Quantization
@@ -673,10 +680,10 @@ For models with per-channel quantization (common in TFLite):
 const quantized = await quantize(result.data, {
   mode: 'per-channel',
   dtype: 'int8',
-  scale: [0.0123, 0.0156, 0.0189],        // Per-channel scales
-  zeroPoint: [0, 0, 0],                    // Per-channel zero points
+  scale: [0.0123, 0.0156, 0.0189], // Per-channel scales
+  zeroPoint: [0, 0, 0], // Per-channel zero points
   channels: 3,
-  dataLayout: 'chw',                       // Specify layout for per-channel
+  dataLayout: 'chw', // Specify layout for per-channel
 });
 ```
 
@@ -685,7 +692,10 @@ const quantized = await quantize(result.data, {
 Calculate optimal quantization parameters from your data:
 
 ```typescript
-import { calculateQuantizationParams, quantize } from 'react-native-vision-utils';
+import {
+  calculateQuantizationParams,
+  quantize,
+} from 'react-native-vision-utils';
 
 // Calculate optimal params for your data range
 const params = await calculateQuantizationParams(result.data, {
@@ -693,10 +703,10 @@ const params = await calculateQuantizationParams(result.data, {
   dtype: 'uint8',
 });
 
-console.log(params.scale);     // Calculated scale
+console.log(params.scale); // Calculated scale
 console.log(params.zeroPoint); // Calculated zero point
-console.log(params.min);       // Data min value
-console.log(params.max);       // Data max value
+console.log(params.min); // Data min value
+console.log(params.max); // Data max value
 
 // Use calculated params for quantization
 const quantized = await quantize(result.data, {
@@ -727,14 +737,14 @@ console.log(dequantized.data); // Float32Array
 
 ##### Quantization Options
 
-| Property     | Type                       | Required | Description                                |
-| ------------ | -------------------------- | -------- | ------------------------------------------ |
-| `mode`       | `'per-tensor' \| 'per-channel'` | Yes | Quantization mode                          |
-| `dtype`      | `'int8' \| 'uint8' \| 'int16'`  | Yes | Output data type                           |
-| `scale`      | `number \| number[]`       | Yes      | Scale factor(s) - array for per-channel    |
-| `zeroPoint`  | `number \| number[]`       | Yes      | Zero point(s) - array for per-channel      |
-| `channels`   | `number`                   | Per-channel | Number of channels (required for per-channel) |
-| `dataLayout` | `'hwc' \| 'chw'`           | Per-channel | Data layout (default: 'hwc')               |
+| Property     | Type                            | Required    | Description                                   |
+| ------------ | ------------------------------- | ----------- | --------------------------------------------- |
+| `mode`       | `'per-tensor' \| 'per-channel'` | Yes         | Quantization mode                             |
+| `dtype`      | `'int8' \| 'uint8' \| 'int16'`  | Yes         | Output data type                              |
+| `scale`      | `number \| number[]`            | Yes         | Scale factor(s) - array for per-channel       |
+| `zeroPoint`  | `number \| number[]`            | Yes         | Zero point(s) - array for per-channel         |
+| `channels`   | `number`                        | Per-channel | Number of channels (required for per-channel) |
+| `dataLayout` | `'hwc' \| 'chw'`                | Per-channel | Data layout (default: 'hwc')                  |
 
 ##### Quantization Formulas
 
@@ -742,6 +752,285 @@ console.log(dequantized.data); // Float32Array
 Quantize:   q = round(value / scale + zeroPoint)
 Dequantize: value = (q - zeroPoint) * scale
 ```
+
+### Bounding Box Utilities
+
+High-performance utilities for working with object detection outputs.
+
+#### `convertBoxFormat(boxes, options)`
+
+Convert between bounding box formats (xyxy, xywh, cxcywh).
+
+```typescript
+import { convertBoxFormat } from 'react-native-vision-utils';
+
+// Convert YOLO format (center x, center y, width, height) to corners
+const result = await convertBoxFormat(
+  [[320, 240, 100, 80]], // [cx, cy, w, h]
+  { fromFormat: 'cxcywh', toFormat: 'xyxy' }
+);
+console.log(result.boxes); // [[270, 200, 370, 280]] - [x1, y1, x2, y2]
+```
+
+##### Box Formats
+
+| Format   | Description                      | Values                  |
+| -------- | -------------------------------- | ----------------------- |
+| `xyxy`   | Two corners                      | [x1, y1, x2, y2]        |
+| `xywh`   | Top-left corner + dimensions     | [x, y, width, height]   |
+| `cxcywh` | Center + dimensions (YOLO style) | [cx, cy, width, height] |
+
+#### `scaleBoxes(boxes, options)`
+
+Scale bounding boxes between different image dimensions.
+
+```typescript
+import { scaleBoxes } from 'react-native-vision-utils';
+
+// Scale boxes from 640x640 model input back to 1920x1080 original
+const result = await scaleBoxes(
+  [[100, 100, 200, 200]], // detections in 640x640 space
+  {
+    fromWidth: 640,
+    fromHeight: 640,
+    toWidth: 1920,
+    toHeight: 1080,
+    format: 'xyxy',
+  }
+);
+// Boxes are now in original image coordinates
+```
+
+#### `clipBoxes(boxes, options)`
+
+Clip bounding boxes to image boundaries.
+
+```typescript
+import { clipBoxes } from 'react-native-vision-utils';
+
+const result = await clipBoxes(
+  [[-10, 50, 700, 500]], // box extends beyond image
+  { width: 640, height: 480, format: 'xyxy' }
+);
+console.log(result.boxes); // [[0, 50, 640, 480]]
+```
+
+#### `calculateIoU(box1, box2, format)`
+
+Calculate Intersection over Union between two boxes.
+
+```typescript
+import { calculateIoU } from 'react-native-vision-utils';
+
+const result = await calculateIoU(
+  [100, 100, 200, 200],
+  [150, 150, 250, 250],
+  'xyxy'
+);
+console.log(result.iou); // ~0.142 (14% overlap)
+console.log(result.intersection); // Area of overlap
+console.log(result.union); // Total covered area
+```
+
+#### `nonMaxSuppression(detections, options)`
+
+Apply Non-Maximum Suppression to filter overlapping detections.
+
+```typescript
+import { nonMaxSuppression } from 'react-native-vision-utils';
+
+const detections = [
+  { box: [100, 100, 200, 200], score: 0.9, classIndex: 0 },
+  { box: [110, 110, 210, 210], score: 0.8, classIndex: 0 }, // overlaps
+  { box: [300, 300, 400, 400], score: 0.7, classIndex: 1 },
+];
+
+const result = await nonMaxSuppression(detections, {
+  iouThreshold: 0.5,
+  scoreThreshold: 0.3,
+  maxDetections: 100,
+});
+// Keeps first and third detection; second is suppressed due to overlap
+```
+
+### Letterbox Padding
+
+YOLO-style letterbox preprocessing for preserving aspect ratio.
+
+#### `letterbox(source, options)`
+
+Apply letterbox padding to an image.
+
+```typescript
+import { letterbox, getPixelData } from 'react-native-vision-utils';
+
+// Letterbox a 1920x1080 image to 640x640 for YOLO
+const result = await letterbox(
+  { type: 'file', value: '/path/to/image.jpg' },
+  {
+    targetWidth: 640,
+    targetHeight: 640,
+    fillColor: [114, 114, 114], // YOLO gray
+  }
+);
+
+console.log(result.imageBase64); // Letterboxed image
+console.log(result.letterboxInfo); // Transform info for reverse mapping
+// letterboxInfo: { scale, offset, originalSize, letterboxedSize }
+
+// Get pixel data from letterboxed image
+const pixels = await getPixelData({
+  source: { type: 'base64', value: result.imageBase64 },
+  colorFormat: 'rgb',
+  normalization: { preset: 'scale' },
+  dataLayout: 'nchw',
+});
+```
+
+#### `reverseLetterbox(boxes, options)`
+
+Transform detection boxes back to original image coordinates.
+
+```typescript
+import { letterbox, reverseLetterbox } from 'react-native-vision-utils';
+
+// First letterbox the image
+const lb = await letterbox(source, { targetWidth: 640, targetHeight: 640 });
+
+// Run detection on letterboxed image...
+const detections = [
+  { box: [100, 150, 200, 250], score: 0.9 }, // in 640x640 space
+];
+
+// Reverse transform to original coordinates
+const result = await reverseLetterbox(
+  detections.map((d) => d.box),
+  {
+    scale: lb.letterboxInfo.scale,
+    offset: lb.letterboxInfo.offset,
+    originalSize: lb.letterboxInfo.originalSize,
+    format: 'xyxy',
+  }
+);
+// Boxes are now in original 1920x1080 coordinates
+```
+
+### Drawing & Visualization
+
+Utilities for visualizing detection and segmentation results.
+
+#### `drawBoxes(source, boxes, options)`
+
+Draw bounding boxes with labels on an image.
+
+```typescript
+import { drawBoxes } from 'react-native-vision-utils';
+
+const result = await drawBoxes(
+  { type: 'base64', value: imageBase64 },
+  [
+    { box: [100, 100, 200, 200], label: 'person', score: 0.95, classIndex: 0 },
+    { box: [300, 150, 400, 350], label: 'dog', score: 0.87, classIndex: 16 },
+    { box: [500, 200, 600, 300], color: [255, 0, 0] }, // custom red color
+  ],
+  {
+    lineWidth: 3,
+    fontSize: 14,
+    drawLabels: true,
+    labelBackgroundAlpha: 0.7,
+  }
+);
+
+// Display result.imageBase64
+console.log(result.width, result.height);
+console.log(result.processingTimeMs);
+```
+
+#### `drawKeypoints(source, keypoints, options)`
+
+Draw pose keypoints with skeleton connections.
+
+```typescript
+import { drawKeypoints } from 'react-native-vision-utils';
+
+// COCO pose keypoints
+const keypoints = [
+  { x: 320, y: 100, confidence: 0.9 }, // nose
+  { x: 310, y: 90, confidence: 0.85 }, // left_eye
+  { x: 330, y: 90, confidence: 0.87 }, // right_eye
+  // ... 17 keypoints total
+];
+
+const result = await drawKeypoints(
+  { type: 'base64', value: imageBase64 },
+  keypoints,
+  {
+    pointRadius: 5,
+    minConfidence: 0.5,
+    lineWidth: 2,
+    skeleton: [
+      { from: 0, to: 1 }, // nose to left_eye
+      { from: 0, to: 2 }, // nose to right_eye
+      { from: 5, to: 6 }, // left_shoulder to right_shoulder
+      // ... more connections
+    ],
+  }
+);
+```
+
+#### `overlayMask(source, mask, options)`
+
+Overlay a segmentation mask on an image.
+
+```typescript
+import { overlayMask } from 'react-native-vision-utils';
+
+// Segmentation output (class indices for each pixel)
+const segmentationMask = new Array(160 * 160).fill(0); // 160x160 mask
+segmentationMask.fill(1, 0, 5000); // Some pixels class 1
+segmentationMask.fill(15, 5000, 10000); // Some pixels class 15
+
+const result = await overlayMask(
+  { type: 'base64', value: imageBase64 },
+  segmentationMask,
+  {
+    maskWidth: 160,
+    maskHeight: 160,
+    alpha: 0.5,
+    isClassMask: true, // Each value is a class index
+  }
+);
+```
+
+#### `overlayHeatmap(source, heatmap, options)`
+
+Overlay an attention/saliency heatmap on an image.
+
+```typescript
+import { overlayHeatmap } from 'react-native-vision-utils';
+
+// Attention weights from a ViT model (14x14 patches)
+const attentionWeights = new Array(14 * 14).fill(0).map(() => Math.random());
+
+const result = await overlayHeatmap(
+  { type: 'base64', value: imageBase64 },
+  attentionWeights,
+  {
+    heatmapWidth: 14,
+    heatmapHeight: 14,
+    alpha: 0.6,
+    colorScheme: 'jet', // 'jet', 'hot', or 'viridis'
+  }
+);
+```
+
+##### Heatmap Color Schemes
+
+| Scheme    | Description                                  |
+| --------- | -------------------------------------------- |
+| `jet`     | Blue → Cyan → Green → Yellow → Red (default) |
+| `hot`     | Black → Red → Yellow → White                 |
+| `viridis` | Purple → Blue → Green → Yellow               |
 
 ## Type Reference
 

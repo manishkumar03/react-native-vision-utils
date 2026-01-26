@@ -52,6 +52,33 @@ import {
   type CameraFrameOptions,
   type CameraFrameResult,
   type CameraPixelFormat,
+  // Bounding Box Types
+  type BoxFormat,
+  type BoundingBox,
+  type ConvertBoxFormatOptions,
+  type ConvertBoxFormatResult,
+  type ScaleBoxesOptions,
+  type ScaleBoxesResult,
+  type ClipBoxesOptions,
+  type ClipBoxesResult,
+  type IoUResult,
+  type Detection,
+  type NMSOptions,
+  type NMSResult,
+  // Letterbox Types
+  type LetterboxOptions,
+  type LetterboxResult,
+  type ReverseLetterboxOptions,
+  type ReverseLetterboxResult,
+  // Drawing Types
+  type DrawBoxesOptions,
+  type DrawableBox,
+  type DrawResult,
+  type Keypoint,
+  type DrawKeypointsOptions,
+  type KeypointsDrawResult,
+  type OverlayMaskOptions,
+  type OverlayHeatmapOptions,
 } from './types';
 
 // Re-export all types
@@ -1902,4 +1929,627 @@ export function isVisionUtilsError(
     result !== null &&
     (result as { error?: boolean }).error === true
   );
+}
+
+// =============================================================================
+// Bounding Box Utilities
+// =============================================================================
+
+/**
+ * Convert bounding boxes between different formats
+ *
+ * Supported formats:
+ * - 'xyxy': [x1, y1, x2, y2] - top-left and bottom-right corners
+ * - 'xywh': [x, y, width, height] - top-left corner and dimensions
+ * - 'cxcywh': [cx, cy, width, height] - center point and dimensions (YOLO format)
+ *
+ * @param boxes - Array of bounding boxes in the source format
+ * @param options - Conversion options specifying source and target formats
+ * @returns Promise resolving to converted boxes
+ *
+ * @example
+ * // Convert YOLO format (cxcywh) to corner format (xyxy)
+ * const result = await convertBoxFormat(
+ *   [[320, 240, 100, 80]], // center-x, center-y, width, height
+ *   { fromFormat: 'cxcywh', toFormat: 'xyxy' }
+ * );
+ * // result.boxes = [[270, 200, 370, 280]]
+ */
+export async function convertBoxFormat(
+  boxes: BoundingBox[],
+  options: ConvertBoxFormatOptions
+): Promise<ConvertBoxFormatResult> {
+  if (!boxes || !Array.isArray(boxes)) {
+    throw new VisionUtilsException(
+      'INVALID_INPUT',
+      'Boxes must be an array of bounding boxes'
+    );
+  }
+
+  const validFormats: BoxFormat[] = ['xyxy', 'xywh', 'cxcywh'];
+  if (!validFormats.includes(options.fromFormat)) {
+    throw new VisionUtilsException(
+      'INVALID_FORMAT',
+      `Invalid fromFormat: ${
+        options.fromFormat
+      }. Must be one of: ${validFormats.join(', ')}`
+    );
+  }
+  if (!validFormats.includes(options.toFormat)) {
+    throw new VisionUtilsException(
+      'INVALID_FORMAT',
+      `Invalid toFormat: ${
+        options.toFormat
+      }. Must be one of: ${validFormats.join(', ')}`
+    );
+  }
+
+  try {
+    const result = await VisionUtils.convertBoxFormat(
+      boxes,
+      options.fromFormat,
+      options.toFormat
+    );
+    return result as ConvertBoxFormatResult;
+  } catch (error) {
+    throw VisionUtilsException.fromNativeError(error);
+  }
+}
+
+/**
+ * Scale bounding boxes from one image size to another
+ *
+ * Useful when you need to map detections from a resized image
+ * back to the original image coordinates.
+ *
+ * @param boxes - Array of bounding boxes to scale
+ * @param options - Scaling options with source and target dimensions
+ * @returns Promise resolving to scaled boxes
+ *
+ * @example
+ * // Scale boxes from 640x640 model input to 1920x1080 original
+ * const result = await scaleBoxes(
+ *   [[100, 100, 200, 200]],
+ *   {
+ *     fromWidth: 640, fromHeight: 640,
+ *     toWidth: 1920, toHeight: 1080,
+ *     format: 'xyxy'
+ *   }
+ * );
+ */
+export async function scaleBoxes(
+  boxes: BoundingBox[],
+  options: ScaleBoxesOptions
+): Promise<ScaleBoxesResult> {
+  if (!boxes || !Array.isArray(boxes)) {
+    throw new VisionUtilsException(
+      'INVALID_INPUT',
+      'Boxes must be an array of bounding boxes'
+    );
+  }
+
+  if (
+    options.fromWidth <= 0 ||
+    options.fromHeight <= 0 ||
+    options.toWidth <= 0 ||
+    options.toHeight <= 0
+  ) {
+    throw new VisionUtilsException(
+      'INVALID_DIMENSIONS',
+      'All dimensions must be positive numbers'
+    );
+  }
+
+  try {
+    const result = await VisionUtils.scaleBoxes(boxes, options);
+    return result as ScaleBoxesResult;
+  } catch (error) {
+    throw VisionUtilsException.fromNativeError(error);
+  }
+}
+
+/**
+ * Clip bounding boxes to image boundaries
+ *
+ * Ensures all box coordinates are within valid image bounds.
+ * Optionally removes boxes that become invalid after clipping.
+ *
+ * @param boxes - Array of bounding boxes to clip
+ * @param options - Clipping options with image dimensions
+ * @returns Promise resolving to clipped boxes
+ *
+ * @example
+ * // Clip boxes to 640x480 image
+ * const result = await clipBoxes(
+ *   [[-10, 50, 700, 500]], // extends beyond boundaries
+ *   { width: 640, height: 480, format: 'xyxy', removeInvalid: true }
+ * );
+ * // result.boxes = [[0, 50, 640, 480]]
+ */
+export async function clipBoxes(
+  boxes: BoundingBox[],
+  options: ClipBoxesOptions
+): Promise<ClipBoxesResult> {
+  if (!boxes || !Array.isArray(boxes)) {
+    throw new VisionUtilsException(
+      'INVALID_INPUT',
+      'Boxes must be an array of bounding boxes'
+    );
+  }
+
+  if (options.width <= 0 || options.height <= 0) {
+    throw new VisionUtilsException(
+      'INVALID_DIMENSIONS',
+      'Width and height must be positive numbers'
+    );
+  }
+
+  try {
+    const result = await VisionUtils.clipBoxes(
+      boxes,
+      options.width,
+      options.height,
+      options.format ?? 'xyxy'
+    );
+    return result as ClipBoxesResult;
+  } catch (error) {
+    throw VisionUtilsException.fromNativeError(error);
+  }
+}
+
+/**
+ * Calculate Intersection over Union (IoU) between two bounding boxes
+ *
+ * IoU is a common metric for measuring overlap between boxes,
+ * used in object detection evaluation and NMS algorithms.
+ *
+ * @param box1 - First bounding box
+ * @param box2 - Second bounding box
+ * @param format - Box format (default: 'xyxy')
+ * @returns Promise resolving to IoU result with intersection and union areas
+ *
+ * @example
+ * const result = await calculateIoU(
+ *   [100, 100, 200, 200],
+ *   [150, 150, 250, 250],
+ *   'xyxy'
+ * );
+ * // result.iou = 0.142... (approximately 14% overlap)
+ */
+export async function calculateIoU(
+  box1: BoundingBox,
+  box2: BoundingBox,
+  format: BoxFormat = 'xyxy'
+): Promise<IoUResult> {
+  if (!box1 || box1.length !== 4) {
+    throw new VisionUtilsException(
+      'INVALID_INPUT',
+      'box1 must be an array of 4 numbers'
+    );
+  }
+  if (!box2 || box2.length !== 4) {
+    throw new VisionUtilsException(
+      'INVALID_INPUT',
+      'box2 must be an array of 4 numbers'
+    );
+  }
+
+  try {
+    const result = await VisionUtils.calculateIoU(box1, box2, format);
+    return result as IoUResult;
+  } catch (error) {
+    throw VisionUtilsException.fromNativeError(error);
+  }
+}
+
+/**
+ * Apply Non-Maximum Suppression (NMS) to a list of detections
+ *
+ * NMS is used to filter out overlapping detections, keeping only
+ * the highest-scoring box among overlapping boxes. Essential for
+ * post-processing object detection model outputs.
+ *
+ * @param detections - Array of detections with boxes and scores
+ * @param options - NMS options including IoU and score thresholds
+ * @returns Promise resolving to filtered detections
+ *
+ * @example
+ * const detections = [
+ *   { box: [100, 100, 200, 200], score: 0.9, classIndex: 0 },
+ *   { box: [110, 110, 210, 210], score: 0.8, classIndex: 0 }, // overlaps with first
+ *   { box: [300, 300, 400, 400], score: 0.7, classIndex: 1 },
+ * ];
+ * const result = await nonMaxSuppression(detections, {
+ *   iouThreshold: 0.5,
+ *   scoreThreshold: 0.3,
+ *   maxDetections: 100
+ * });
+ * // result.detections = first and third detection (second suppressed)
+ */
+export async function nonMaxSuppression(
+  detections: Detection[],
+  options: NMSOptions = {}
+): Promise<NMSResult> {
+  if (!detections || !Array.isArray(detections)) {
+    throw new VisionUtilsException(
+      'INVALID_INPUT',
+      'Detections must be an array'
+    );
+  }
+
+  const opts = {
+    iouThreshold: options.iouThreshold ?? 0.5,
+    scoreThreshold: options.scoreThreshold ?? 0.0,
+    maxDetections: options.maxDetections,
+    format: options.format ?? 'xyxy',
+  };
+
+  try {
+    const result = await VisionUtils.nonMaxSuppression(detections, opts);
+    return result as NMSResult;
+  } catch (error) {
+    throw VisionUtilsException.fromNativeError(error);
+  }
+}
+
+// =============================================================================
+// Letterbox Utilities
+// =============================================================================
+
+/**
+ * Apply letterbox padding to an image
+ *
+ * Letterboxing resizes an image to fit within target dimensions while
+ * preserving aspect ratio, filling empty areas with a solid color.
+ * This is the standard preprocessing for YOLO-style models.
+ *
+ * @param source - Image source
+ * @param options - Letterbox options with target dimensions
+ * @returns Promise resolving to letterboxed image with transform info
+ *
+ * @example
+ * // Letterbox a 1920x1080 image to 640x640 for YOLO
+ * const result = await letterbox(
+ *   { type: 'file', value: '/path/to/image.jpg' },
+ *   {
+ *     targetWidth: 640,
+ *     targetHeight: 640,
+ *     fillColor: [114, 114, 114] // YOLO gray
+ *   }
+ * );
+ * // Use result.letterboxInfo to reverse-transform detections
+ */
+export async function letterbox(
+  source: ImageSource,
+  options: LetterboxOptions
+): Promise<LetterboxResult> {
+  validateSource(source);
+
+  if (options.targetWidth <= 0 || options.targetHeight <= 0) {
+    throw new VisionUtilsException(
+      'INVALID_DIMENSIONS',
+      'Target width and height must be positive numbers'
+    );
+  }
+
+  const opts = {
+    targetWidth: options.targetWidth,
+    targetHeight: options.targetHeight,
+    fillColor: options.fillColor ?? DEFAULT_LETTERBOX_COLOR,
+    scaleUp: options.scaleUp ?? true,
+  };
+
+  try {
+    const result = await VisionUtils.letterbox(source, opts);
+    return result as LetterboxResult;
+  } catch (error) {
+    throw VisionUtilsException.fromNativeError(error);
+  }
+}
+
+/**
+ * Reverse letterbox transformation on bounding box coordinates
+ *
+ * After running detection on a letterboxed image, use this to
+ * transform the box coordinates back to the original image space.
+ *
+ * @param boxes - Bounding boxes from letterboxed image
+ * @param options - Reverse transform options from letterbox result
+ * @returns Promise resolving to boxes in original image coordinates
+ *
+ * @example
+ * // First letterbox the image
+ * const lb = await letterbox(source, { targetWidth: 640, targetHeight: 640 });
+ *
+ * // Run detection on lb.imageBase64...
+ * const detections = [...]; // boxes in 640x640 space
+ *
+ * // Reverse transform to original coordinates
+ * const originalBoxes = await reverseLetterbox(
+ *   detections.map(d => d.box),
+ *   {
+ *     scale: lb.letterboxInfo.scale,
+ *     offset: lb.letterboxInfo.offset,
+ *     originalSize: lb.letterboxInfo.originalSize,
+ *     format: 'xyxy'
+ *   }
+ * );
+ */
+export async function reverseLetterbox(
+  boxes: BoundingBox[],
+  options: ReverseLetterboxOptions
+): Promise<ReverseLetterboxResult> {
+  if (!boxes || !Array.isArray(boxes)) {
+    throw new VisionUtilsException(
+      'INVALID_INPUT',
+      'Boxes must be an array of bounding boxes'
+    );
+  }
+
+  if (options.scale <= 0) {
+    throw new VisionUtilsException('INVALID_SCALE', 'Scale must be positive');
+  }
+
+  try {
+    const result = await VisionUtils.reverseLetterbox(boxes, options);
+    return result as ReverseLetterboxResult;
+  } catch (error) {
+    throw VisionUtilsException.fromNativeError(error);
+  }
+}
+
+// =============================================================================
+// Drawing / Visualization Utilities
+// =============================================================================
+
+/**
+ * Draw bounding boxes on an image
+ *
+ * Renders detection boxes with optional labels and confidence scores.
+ * Supports automatic per-class coloring or custom colors per box.
+ *
+ * @param source - Image source to draw on
+ * @param boxes - Array of drawable boxes with coordinates and optional labels
+ * @param options - Drawing options (line width, font size, colors, etc.)
+ * @returns Promise resolving to annotated image
+ *
+ * @example
+ * const result = await drawBoxes(
+ *   { type: 'base64', value: imageBase64 },
+ *   [
+ *     { box: [100, 100, 200, 200], label: 'person', score: 0.95, classIndex: 0 },
+ *     { box: [300, 150, 400, 350], label: 'dog', score: 0.87, classIndex: 16 }
+ *   ],
+ *   { lineWidth: 3, fontSize: 14, drawLabels: true }
+ * );
+ * // Display result.imageBase64
+ */
+export async function drawBoxes(
+  source: ImageSource,
+  boxes: DrawableBox[],
+  options: DrawBoxesOptions = {}
+): Promise<DrawResult> {
+  validateSource(source);
+
+  if (!boxes || !Array.isArray(boxes)) {
+    throw new VisionUtilsException(
+      'INVALID_INPUT',
+      'Boxes must be an array of drawable boxes'
+    );
+  }
+
+  const opts = {
+    lineWidth: options.lineWidth ?? 2,
+    fontSize: options.fontSize ?? 12,
+    drawLabels: options.drawLabels ?? true,
+    labelBackgroundAlpha: options.labelBackgroundAlpha ?? 0.7,
+    labelColor: options.labelColor ?? [255, 255, 255],
+    defaultColor: options.defaultColor,
+    quality: options.quality ?? 90,
+  };
+
+  try {
+    const result = await VisionUtils.drawBoxes(source, boxes, opts);
+    return result as DrawResult;
+  } catch (error) {
+    throw VisionUtilsException.fromNativeError(error);
+  }
+}
+
+/**
+ * Draw keypoints and skeleton connections on an image
+ *
+ * Renders pose estimation keypoints with optional skeleton lines.
+ * Supports confidence thresholding and custom colors.
+ *
+ * @param source - Image source to draw on
+ * @param keypoints - Array of keypoints with x, y coordinates
+ * @param options - Drawing options (radius, skeleton connections, etc.)
+ * @returns Promise resolving to annotated image
+ *
+ * @example
+ * // Draw pose keypoints with COCO skeleton
+ * const result = await drawKeypoints(
+ *   { type: 'base64', value: imageBase64 },
+ *   [
+ *     { x: 320, y: 100, confidence: 0.9 }, // nose
+ *     { x: 310, y: 90, confidence: 0.85 }, // left eye
+ *     // ... more keypoints
+ *   ],
+ *   {
+ *     pointRadius: 5,
+ *     minConfidence: 0.5,
+ *     skeleton: [
+ *       { from: 0, to: 1 }, // nose to left eye
+ *       { from: 0, to: 2 }, // nose to right eye
+ *       // ... more connections
+ *     ]
+ *   }
+ * );
+ */
+export async function drawKeypoints(
+  source: ImageSource,
+  keypoints: Keypoint[],
+  options: DrawKeypointsOptions = {}
+): Promise<KeypointsDrawResult> {
+  validateSource(source);
+
+  if (!keypoints || !Array.isArray(keypoints)) {
+    throw new VisionUtilsException(
+      'INVALID_INPUT',
+      'Keypoints must be an array'
+    );
+  }
+
+  const opts = {
+    pointRadius: options.pointRadius ?? 4,
+    pointColors: options.pointColors,
+    skeleton: options.skeleton,
+    lineWidth: options.lineWidth ?? 2,
+    minConfidence: options.minConfidence ?? 0,
+    quality: options.quality ?? 90,
+  };
+
+  try {
+    const result = await VisionUtils.drawKeypoints(source, keypoints, opts);
+    return result as KeypointsDrawResult;
+  } catch (error) {
+    throw VisionUtilsException.fromNativeError(error);
+  }
+}
+
+/**
+ * Overlay a segmentation mask on an image
+ *
+ * Visualizes semantic or instance segmentation results by
+ * overlaying colored masks on the original image.
+ *
+ * @param source - Image source to overlay on
+ * @param mask - Flat array of mask values (class indices or intensities)
+ * @param options - Overlay options (alpha, colors, mask dimensions)
+ * @returns Promise resolving to image with mask overlay
+ *
+ * @example
+ * // Overlay a 160x160 segmentation mask on the image
+ * const result = await overlayMask(
+ *   { type: 'base64', value: imageBase64 },
+ *   segmentationOutput, // flat array of class indices
+ *   {
+ *     maskWidth: 160,
+ *     maskHeight: 160,
+ *     alpha: 0.5,
+ *     isClassMask: true
+ *   }
+ * );
+ */
+export async function overlayMask(
+  source: ImageSource,
+  mask: number[],
+  options: OverlayMaskOptions
+): Promise<DrawResult> {
+  validateSource(source);
+
+  if (!mask || !Array.isArray(mask)) {
+    throw new VisionUtilsException('INVALID_INPUT', 'Mask must be an array');
+  }
+
+  if (options.maskWidth <= 0 || options.maskHeight <= 0) {
+    throw new VisionUtilsException(
+      'INVALID_DIMENSIONS',
+      'Mask width and height must be positive'
+    );
+  }
+
+  const expectedSize = options.maskWidth * options.maskHeight;
+  if (mask.length !== expectedSize) {
+    throw new VisionUtilsException(
+      'INVALID_INPUT',
+      `Mask size ${mask.length} doesn't match dimensions ${options.maskWidth}x${options.maskHeight} = ${expectedSize}`
+    );
+  }
+
+  const opts = {
+    maskWidth: options.maskWidth,
+    maskHeight: options.maskHeight,
+    alpha: options.alpha ?? 0.5,
+    colorMap: options.colorMap,
+    singleColor: options.singleColor,
+    isClassMask: options.isClassMask ?? true,
+    quality: options.quality ?? 90,
+  };
+
+  try {
+    const result = await VisionUtils.overlayMask(source, mask, opts);
+    return result as DrawResult;
+  } catch (error) {
+    throw VisionUtilsException.fromNativeError(error);
+  }
+}
+
+/**
+ * Overlay a heatmap on an image
+ *
+ * Visualizes attention maps, saliency maps, or other heatmap data
+ * using configurable color schemes.
+ *
+ * @param source - Image source to overlay on
+ * @param heatmap - Flat array of heatmap values (normalized 0-1 or raw)
+ * @param options - Overlay options (dimensions, color scheme, normalization)
+ * @returns Promise resolving to image with heatmap overlay
+ *
+ * @example
+ * // Overlay an attention heatmap with jet colormap
+ * const result = await overlayHeatmap(
+ *   { type: 'base64', value: imageBase64 },
+ *   attentionWeights, // flat array of float values
+ *   {
+ *     heatmapWidth: 14,
+ *     heatmapHeight: 14,
+ *     alpha: 0.6,
+ *     colorScheme: 'jet'
+ *   }
+ * );
+ */
+export async function overlayHeatmap(
+  source: ImageSource,
+  heatmap: number[],
+  options: OverlayHeatmapOptions
+): Promise<DrawResult> {
+  validateSource(source);
+
+  if (!heatmap || !Array.isArray(heatmap)) {
+    throw new VisionUtilsException('INVALID_INPUT', 'Heatmap must be an array');
+  }
+
+  if (options.heatmapWidth <= 0 || options.heatmapHeight <= 0) {
+    throw new VisionUtilsException(
+      'INVALID_DIMENSIONS',
+      'Heatmap width and height must be positive'
+    );
+  }
+
+  const expectedSize = options.heatmapWidth * options.heatmapHeight;
+  if (heatmap.length !== expectedSize) {
+    throw new VisionUtilsException(
+      'INVALID_INPUT',
+      `Heatmap size ${heatmap.length} doesn't match dimensions ${options.heatmapWidth}x${options.heatmapHeight} = ${expectedSize}`
+    );
+  }
+
+  const opts = {
+    heatmapWidth: options.heatmapWidth,
+    heatmapHeight: options.heatmapHeight,
+    alpha: options.alpha ?? 0.5,
+    colorScheme: options.colorScheme ?? 'jet',
+    minValue: options.minValue,
+    maxValue: options.maxValue,
+    quality: options.quality ?? 90,
+  };
+
+  try {
+    const result = await VisionUtils.overlayHeatmap(source, heatmap, opts);
+    return result as DrawResult;
+  } catch (error) {
+    throw VisionUtilsException.fromNativeError(error);
+  }
 }

@@ -762,4 +762,467 @@ public class VisionUtilsBridge: NSObject {
             reject("YUV_CONVERT_ERROR", error.localizedDescription)
         }
     }
+
+    // MARK: - Bounding Box Utilities
+
+    @objc
+    public static func convertBoxFormat(
+        _ boxes: NSArray,
+        sourceFormat: String,
+        targetFormat: String,
+        resolve: @escaping (NSDictionary) -> Void,
+        reject: @escaping (String, String) -> Void
+    ) {
+        do {
+            guard let boxesArray = boxes as? [[NSNumber]] else {
+                reject("INVALID_INPUT", "Boxes must be array of arrays")
+                return
+            }
+
+            let doubleBoxes = boxesArray.map { $0.map { $0.doubleValue } }
+            let result = try BoundingBoxUtils.convertBoxFormat(
+                boxes: doubleBoxes,
+                sourceFormat: sourceFormat,
+                targetFormat: targetFormat
+            )
+
+            resolve(["boxes": result] as NSDictionary)
+        } catch {
+            reject("BOX_ERROR", error.localizedDescription)
+        }
+    }
+
+    @objc
+    public static func scaleBoxes(
+        _ boxes: NSArray,
+        options: NSDictionary,
+        resolve: @escaping (NSDictionary) -> Void,
+        reject: @escaping (String, String) -> Void
+    ) {
+        do {
+            guard let boxesArray = boxes as? [[NSNumber]] else {
+                reject("INVALID_INPUT", "Boxes must be array of arrays")
+                return
+            }
+
+            let optionsDict = options as? [String: Any] ?? [:]
+            let sourceWidth = optionsDict["sourceWidth"] as? Double ?? 1.0
+            let sourceHeight = optionsDict["sourceHeight"] as? Double ?? 1.0
+            let targetWidth = optionsDict["targetWidth"] as? Double ?? 1.0
+            let targetHeight = optionsDict["targetHeight"] as? Double ?? 1.0
+            let format = optionsDict["format"] as? String ?? "xyxy"
+            let clip = optionsDict["clip"] as? Bool ?? true
+
+            let doubleBoxes = boxesArray.map { $0.map { $0.doubleValue } }
+            let result = try BoundingBoxUtils.scaleBoxes(
+                boxes: doubleBoxes,
+                sourceWidth: sourceWidth,
+                sourceHeight: sourceHeight,
+                targetWidth: targetWidth,
+                targetHeight: targetHeight,
+                format: format,
+                clip: clip
+            )
+
+            resolve(["boxes": result] as NSDictionary)
+        } catch {
+            reject("BOX_ERROR", error.localizedDescription)
+        }
+    }
+
+    @objc
+    public static func clipBoxes(
+        _ boxes: NSArray,
+        width: Int,
+        height: Int,
+        format: String,
+        resolve: @escaping (NSDictionary) -> Void,
+        reject: @escaping (String, String) -> Void
+    ) {
+        do {
+            guard let boxesArray = boxes as? [[NSNumber]] else {
+                reject("INVALID_INPUT", "Boxes must be array of arrays")
+                return
+            }
+
+            let doubleBoxes = boxesArray.map { $0.map { $0.doubleValue } }
+            let result = try BoundingBoxUtils.clipBoxes(
+                boxes: doubleBoxes,
+                width: Double(width),
+                height: Double(height),
+                format: format
+            )
+
+            resolve(["boxes": result] as NSDictionary)
+        } catch {
+            reject("BOX_ERROR", error.localizedDescription)
+        }
+    }
+
+    @objc
+    public static func calculateIoU(
+        _ box1: NSArray,
+        box2: NSArray,
+        format: String,
+        resolve: @escaping (NSDictionary) -> Void,
+        reject: @escaping (String, String) -> Void
+    ) {
+        do {
+            guard let box1Array = box1 as? [NSNumber],
+                  let box2Array = box2 as? [NSNumber] else {
+                reject("INVALID_INPUT", "Boxes must be arrays of numbers")
+                return
+            }
+
+            let result = try BoundingBoxUtils.calculateIoU(
+                box1: box1Array.map { $0.doubleValue },
+                box2: box2Array.map { $0.doubleValue },
+                format: format
+            )
+
+            resolve(result as NSDictionary)
+        } catch {
+            reject("BOX_ERROR", error.localizedDescription)
+        }
+    }
+
+    @objc
+    public static func nonMaxSuppression(
+        _ boxes: NSArray,
+        scores: NSArray,
+        options: NSDictionary,
+        resolve: @escaping (NSDictionary) -> Void,
+        reject: @escaping (String, String) -> Void
+    ) {
+        do {
+            guard let boxesArray = boxes as? [[NSNumber]],
+                  let scoresArray = scores as? [NSNumber] else {
+                reject("INVALID_INPUT", "Invalid boxes or scores format")
+                return
+            }
+
+            let optionsDict = options as? [String: Any] ?? [:]
+            let iouThreshold = optionsDict["iouThreshold"] as? Double ?? 0.5
+            let scoreThreshold = optionsDict["scoreThreshold"] as? Double ?? 0.25
+            let maxDetections = optionsDict["maxDetections"] as? Int ?? 100
+            let format = optionsDict["format"] as? String ?? "xyxy"
+
+            let doubleBoxes = boxesArray.map { $0.map { $0.doubleValue } }
+            let doubleScores = scoresArray.map { $0.doubleValue }
+
+            let result = try BoundingBoxUtils.nonMaxSuppression(
+                boxes: doubleBoxes,
+                scores: doubleScores,
+                iouThreshold: iouThreshold,
+                scoreThreshold: scoreThreshold,
+                maxDetections: maxDetections,
+                format: format
+            )
+
+            resolve(result as NSDictionary)
+        } catch {
+            reject("NMS_ERROR", error.localizedDescription)
+        }
+    }
+
+    // MARK: - Letterbox Utilities
+
+    @objc
+    public static func letterbox(
+        _ source: NSDictionary,
+        options: NSDictionary,
+        resolve: @escaping (NSDictionary) -> Void,
+        reject: @escaping (String, String) -> Void
+    ) {
+        Task {
+            do {
+                guard let sourceDict = source as? [String: Any] else {
+                    reject("INVALID_SOURCE", "Invalid source format")
+                    return
+                }
+
+                let imageSource = try ImageSource(from: sourceDict)
+                let image = try await ImageLoader.loadImage(from: imageSource)
+
+                let optionsDict = options as? [String: Any] ?? [:]
+                let targetWidth = optionsDict["targetWidth"] as? Int ?? 640
+                let targetHeight = optionsDict["targetHeight"] as? Int ?? 640
+                let padColor = (optionsDict["padColor"] as? [NSNumber])?.map { $0.intValue } ?? [114, 114, 114]
+                let scaleUp = optionsDict["scaleUp"] as? Bool ?? true
+                let autoStride = optionsDict["autoStride"] as? Bool ?? false
+                let stride = optionsDict["stride"] as? Int ?? 32
+                let center = optionsDict["center"] as? Bool ?? true
+
+                let result = try LetterboxUtils.letterbox(
+                    image: image,
+                    targetWidth: targetWidth,
+                    targetHeight: targetHeight,
+                    padColor: padColor,
+                    scaleUp: scaleUp,
+                    autoStride: autoStride,
+                    stride: stride,
+                    center: center
+                )
+
+                resolve(result as NSDictionary)
+            } catch let error as VisionUtilsError {
+                reject(error.code, error.message)
+            } catch {
+                reject("LETTERBOX_ERROR", error.localizedDescription)
+            }
+        }
+    }
+
+    @objc
+    public static func reverseLetterbox(
+        _ boxes: NSArray,
+        options: NSDictionary,
+        resolve: @escaping (NSDictionary) -> Void,
+        reject: @escaping (String, String) -> Void
+    ) {
+        do {
+            guard let boxesArray = boxes as? [[NSNumber]] else {
+                reject("INVALID_INPUT", "Boxes must be array of arrays")
+                return
+            }
+
+            let opts = options as? [String: Any] ?? [:]
+            let scale = opts["scale"] as? Double ?? 1.0
+            let offset = (opts["offset"] as? [NSNumber])?.map { $0.doubleValue } ?? [0.0, 0.0]
+            let originalSize = (opts["originalSize"] as? [NSNumber])?.map { $0.intValue } ?? [0, 0]
+            let format = opts["format"] as? String ?? "xyxy"
+            let clip = opts["clip"] as? Bool ?? true
+
+            let doubleBoxes = boxesArray.map { $0.map { $0.doubleValue } }
+            let result = try LetterboxUtils.reverseLetterbox(
+                boxes: doubleBoxes,
+                scale: scale,
+                offset: offset,
+                originalWidth: originalSize.count > 0 ? originalSize[0] : 0,
+                originalHeight: originalSize.count > 1 ? originalSize[1] : 0,
+                format: format,
+                clip: clip
+            )
+
+            resolve([
+                "boxes": result.boxes,
+                "format": result.format,
+                "processingTimeMs": result.processingTimeMs
+            ] as NSDictionary)
+        } catch {
+            reject("LETTERBOX_ERROR", error.localizedDescription)
+        }
+    }
+
+    // MARK: - Drawing Utilities
+
+    @objc
+    public static func drawBoxes(
+        _ source: NSDictionary,
+        boxes: NSArray,
+        options: NSDictionary,
+        resolve: @escaping (NSDictionary) -> Void,
+        reject: @escaping (String, String) -> Void
+    ) {
+        Task {
+            do {
+                guard let sourceDict = source as? [String: Any] else {
+                    reject("INVALID_SOURCE", "Invalid source format")
+                    return
+                }
+
+                let imageSource = try ImageSource(from: sourceDict)
+                let image = try await ImageLoader.loadImage(from: imageSource)
+
+                guard let boxesArray = boxes as? [[String: Any]] else {
+                    reject("INVALID_INPUT", "Boxes must be array of objects")
+                    return
+                }
+
+                let optionsDict = options as? [String: Any] ?? [:]
+                let lineWidth = CGFloat(optionsDict["lineWidth"] as? Double ?? 2.0)
+                let fontSize = CGFloat(optionsDict["fontSize"] as? Double ?? 14.0)
+                let drawLabels = optionsDict["drawLabels"] as? Bool ?? true
+                let labelBackgroundAlpha = CGFloat(optionsDict["labelBackgroundAlpha"] as? Double ?? 0.7)
+                let labelColor = (optionsDict["labelColor"] as? [NSNumber])?.map { $0.intValue } ?? [255, 255, 255]
+                let defaultColor = (optionsDict["color"] as? [NSNumber])?.map { $0.intValue }
+                let quality = optionsDict["quality"] as? Int ?? 90
+
+                let result = try DrawingUtils.drawBoxes(
+                    image: image,
+                    boxes: boxesArray,
+                    lineWidth: lineWidth,
+                    fontSize: fontSize,
+                    drawLabels: drawLabels,
+                    labelBackgroundAlpha: labelBackgroundAlpha,
+                    labelColor: labelColor,
+                    defaultColor: defaultColor,
+                    quality: quality
+                )
+
+                resolve(result as NSDictionary)
+            } catch let error as VisionUtilsError {
+                reject(error.code, error.message)
+            } catch {
+                reject("DRAW_ERROR", error.localizedDescription)
+            }
+        }
+    }
+
+    @objc
+    public static func drawKeypoints(
+        _ source: NSDictionary,
+        keypoints: NSArray,
+        options: NSDictionary,
+        resolve: @escaping (NSDictionary) -> Void,
+        reject: @escaping (String, String) -> Void
+    ) {
+        Task {
+            do {
+                guard let sourceDict = source as? [String: Any] else {
+                    reject("INVALID_SOURCE", "Invalid source format")
+                    return
+                }
+
+                let imageSource = try ImageSource(from: sourceDict)
+                let image = try await ImageLoader.loadImage(from: imageSource)
+
+                guard let keypointsArray = keypoints as? [[String: Any]] else {
+                    reject("INVALID_INPUT", "Keypoints must be array of objects")
+                    return
+                }
+
+                let optionsDict = options as? [String: Any] ?? [:]
+                let pointRadius = CGFloat(optionsDict["pointRadius"] as? Double ?? 5.0)
+                let pointColors = (optionsDict["pointColor"] as? [[NSNumber]])?.map { $0.map { $0.intValue } }
+                let skeleton = optionsDict["skeleton"] as? [[String: Any]]
+                let lineWidth = CGFloat(optionsDict["lineWidth"] as? Double ?? 2.0)
+                let minConfidence = CGFloat(optionsDict["minConfidence"] as? Double ?? 0.3)
+                let quality = optionsDict["quality"] as? Int ?? 90
+
+                let result = try DrawingUtils.drawKeypoints(
+                    image: image,
+                    keypoints: keypointsArray,
+                    pointRadius: pointRadius,
+                    pointColors: pointColors,
+                    skeleton: skeleton,
+                    lineWidth: lineWidth,
+                    minConfidence: minConfidence,
+                    quality: quality
+                )
+
+                resolve(result as NSDictionary)
+            } catch let error as VisionUtilsError {
+                reject(error.code, error.message)
+            } catch {
+                reject("DRAW_ERROR", error.localizedDescription)
+            }
+        }
+    }
+
+    @objc
+    public static func overlayMask(
+        _ source: NSDictionary,
+        mask: NSArray,
+        width: Double,
+        height: Double,
+        options: NSDictionary,
+        resolve: @escaping (NSDictionary) -> Void,
+        reject: @escaping (String, String) -> Void
+    ) {
+        Task {
+            do {
+                guard let sourceDict = source as? [String: Any] else {
+                    reject("INVALID_SOURCE", "Invalid source format")
+                    return
+                }
+
+                let imageSource = try ImageSource(from: sourceDict)
+                let image = try await ImageLoader.loadImage(from: imageSource)
+
+                guard let maskArray = mask as? [NSNumber] else {
+                    reject("INVALID_INPUT", "Mask must be array of numbers")
+                    return
+                }
+
+                let optionsDict = options as? [String: Any] ?? [:]
+                let alpha = CGFloat(optionsDict["alpha"] as? Double ?? 0.5)
+                let colorMap = (optionsDict["colorMap"] as? [[NSNumber]])?.map { $0.map { $0.intValue } }
+                let singleColor = (optionsDict["color"] as? [NSNumber])?.map { $0.intValue }
+                let isClassMask = optionsDict["isClassMask"] as? Bool ?? true
+                let quality = optionsDict["quality"] as? Int ?? 90
+
+                let result = try DrawingUtils.overlayMask(
+                    image: image,
+                    mask: maskArray.map { $0.intValue },
+                    maskWidth: Int(width),
+                    maskHeight: Int(height),
+                    alpha: alpha,
+                    colorMap: colorMap,
+                    singleColor: singleColor,
+                    isClassMask: isClassMask,
+                    quality: quality
+                )
+
+                resolve(result as NSDictionary)
+            } catch let error as VisionUtilsError {
+                reject(error.code, error.message)
+            } catch {
+                reject("MASK_ERROR", error.localizedDescription)
+            }
+        }
+    }
+
+    @objc
+    public static func overlayHeatmap(
+        _ source: NSDictionary,
+        heatmap: NSArray,
+        width: Double,
+        height: Double,
+        options: NSDictionary,
+        resolve: @escaping (NSDictionary) -> Void,
+        reject: @escaping (String, String) -> Void
+    ) {
+        Task {
+            do {
+                guard let sourceDict = source as? [String: Any] else {
+                    reject("INVALID_SOURCE", "Invalid source format")
+                    return
+                }
+
+                let imageSource = try ImageSource(from: sourceDict)
+                let image = try await ImageLoader.loadImage(from: imageSource)
+
+                guard let heatmapArray = heatmap as? [NSNumber] else {
+                    reject("INVALID_INPUT", "Heatmap must be array of numbers")
+                    return
+                }
+
+                let optionsDict = options as? [String: Any] ?? [:]
+                let alpha = CGFloat(optionsDict["alpha"] as? Double ?? 0.6)
+                let colorScheme = optionsDict["colorScheme"] as? String ?? "jet"
+                let minValue = optionsDict["minValue"] as? Double
+                let maxValue = optionsDict["maxValue"] as? Double
+                let quality = optionsDict["quality"] as? Int ?? 90
+
+                let result = try DrawingUtils.overlayHeatmap(
+                    image: image,
+                    heatmap: heatmapArray.map { $0.doubleValue },
+                    heatmapWidth: Int(width),
+                    heatmapHeight: Int(height),
+                    alpha: alpha,
+                    colorScheme: colorScheme,
+                    minValue: minValue,
+                    maxValue: maxValue,
+                    quality: quality
+                )
+
+                resolve(result as NSDictionary)
+            } catch let error as VisionUtilsError {
+                reject(error.code, error.message)
+            } catch {
+                reject("HEATMAP_ERROR", error.localizedDescription)
+            }
+        }
+    }
 }
