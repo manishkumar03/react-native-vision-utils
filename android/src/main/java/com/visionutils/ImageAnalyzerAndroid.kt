@@ -144,15 +144,19 @@ object ImageAnalyzerAndroid {
   /**
    * Get image metadata
    */
-  fun getMetadata(bitmap: Bitmap): WritableMap {
+  fun getMetadata(bitmap: Bitmap, fileSize: Int? = null, format: String? = null): WritableMap {
     return Arguments.createMap().apply {
       putInt("width", bitmap.width)
       putInt("height", bitmap.height)
+      putString("format", format ?: "unknown")
       putInt("channels", if (bitmap.hasAlpha()) 4 else 3)
       putString("colorSpace", bitmap.config?.name ?: "unknown")
       putDouble("aspectRatio", bitmap.width.toDouble() / bitmap.height.toDouble())
       putBoolean("hasAlpha", bitmap.hasAlpha())
-      putInt("byteCount", bitmap.byteCount)
+      putInt("bitsPerComponent", 8)
+      if (fileSize != null) {
+        putInt("fileSize", fileSize)
+      }
     }
   }
 

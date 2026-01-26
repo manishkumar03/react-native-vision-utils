@@ -173,8 +173,12 @@ class VisionUtilsModule(reactContext: ReactApplicationContext) :
       try {
         val context = reactApplicationContext.applicationContext
         val imageSource = ImageSource.fromMap(source)
-        val bitmap = ImageLoader.loadImage(context, imageSource)
-        val metadata = ImageAnalyzerAndroid.getMetadata(bitmap)
+        val loadResult = ImageLoader.loadImageWithMetadata(context, imageSource)
+        val metadata = ImageAnalyzerAndroid.getMetadata(
+          loadResult.bitmap,
+          loadResult.fileSize,
+          loadResult.format
+        )
 
         withContext(Dispatchers.Main) {
           promise.resolve(metadata)

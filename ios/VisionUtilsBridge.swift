@@ -168,8 +168,12 @@ public class VisionUtilsBridge: NSObject {
                 }
 
                 let imageSource = try ImageSource(from: sourceDict)
-                let image = try await ImageLoader.loadImage(from: imageSource)
-                let metadata = ImageAnalyzer.getMetadata(from: image)
+                let loadResult = try await ImageLoader.loadImageWithMetadata(from: imageSource)
+                let metadata = ImageAnalyzer.getMetadata(
+                    from: loadResult.image,
+                    fileSize: loadResult.fileSize,
+                    format: loadResult.format
+                )
 
                 resolve(metadata as NSDictionary)
             } catch let error as VisionUtilsError {

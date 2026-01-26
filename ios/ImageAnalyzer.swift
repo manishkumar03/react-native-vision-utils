@@ -107,7 +107,7 @@ class ImageAnalyzer {
     // MARK: - Metadata
 
     /// Get image metadata (dimensions, format, color space)
-    static func getMetadata(from image: UIImage) -> [String: Any] {
+    static func getMetadata(from image: UIImage, fileSize: Int? = nil, format: String? = nil) -> [String: Any] {
         let width = Int(image.size.width * image.scale)
         let height = Int(image.size.height * image.scale)
 
@@ -125,9 +125,10 @@ class ImageAnalyzer {
             bitsPerPixel = cgImage.bitsPerPixel
         }
 
-        return [
+        var result: [String: Any] = [
             "width": width,
             "height": height,
+            "format": format ?? "unknown",
             "colorSpace": colorSpace,
             "hasAlpha": hasAlpha,
             "bitsPerComponent": bitsPerComponent,
@@ -135,6 +136,12 @@ class ImageAnalyzer {
             "orientation": image.imageOrientation.rawValue,
             "scale": image.scale
         ]
+
+        if let size = fileSize {
+            result["fileSize"] = size
+        }
+
+        return result
     }
 
     // MARK: - Validation
