@@ -98,7 +98,7 @@ cd ios && pod install
 
 ## 🚀 Quick Start
 
-### Basic Usage
+### Raw Pixel Data Extraction
 
 ```typescript
 import { getPixelData } from 'react-native-vision-utils';
